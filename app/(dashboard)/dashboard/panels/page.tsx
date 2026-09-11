@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { provisionDemoPanel } from '@/lib/panels/provision';
+import { PublishButton } from '@/components/dashboard/PublishButton';
 
 interface RawPanel {
   id: string;
@@ -79,20 +80,60 @@ export default function PanelsPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Panels</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Panels</h2>
+      </div>
       {panels.length === 0 ? (
         <p className="text-gray-500">No panels yet.</p>
       ) : (
         <div className="grid gap-4">
           {panels.map((panel) => (
-            <Link
-              key={panel.id}
-              href={`/dashboard/panels/${panel.id}`}
-              className="p-4 bg-white rounded-lg shadow hover:shadow-md transition"
-            >
-              <h3 className="font-semibold text-gray-900">{panel.name}</h3>
-              <p className="text-sm text-gray-500">Status: {panel.status}</p>
-            </Link>
+            <div key={panel.id}>
+              <Link
+                href={`/dashboard/panels/${panel.id}`}
+                className="block p-4 bg-white rounded-lg shadow hover:shadow-md transition"
+              >
+                <h3 className="font-semibold text-gray-900">{panel.name}</h3>
+                <p className="text-sm text-gray-500">Status: {panel.status}</p>
+              </Link>
+              <ul className="mt-2 ml-4 space-y-1 text-sm">
+                <li>
+                  <Link
+                    href={`/dashboard/panels/${panel.id}/services`}
+                    className="text-green-700 hover:underline"
+                  >
+                    Services & Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={`/dashboard/panels/${panel.id}/branding`}
+                    className="text-green-700 hover:underline"
+                  >
+                    Branding
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={`/dashboard/panels/${panel.id}/copy`}
+                    className="text-green-700 hover:underline"
+                  >
+                    Copy & Content
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={`/dashboard/panels/${panel.id}/domain`}
+                    className="text-green-700 hover:underline"
+                  >
+                    Custom Domain
+                  </Link>
+                </li>
+                <li>
+                  <PublishButton panelId={panel.id} />
+                </li>
+              </ul>
+            </div>
           ))}
         </div>
       )}
