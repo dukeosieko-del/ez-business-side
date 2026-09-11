@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/tenant/resolve';
-import { trackClick } from '@/lib/affiliate/track';
 
 const PROTECTED_PATHS = ['/dashboard', '/partner', '/settings'];
 const PUBLIC_PATHS = ['/', '/auth', '/_next', '/api/health', '/favicon.ico', '/api/affiliate'];
@@ -27,7 +26,14 @@ export async function middleware(request: NextRequest) {
     if (ref) {
       const ip = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? undefined;
       const ua = request.headers.get('user-agent') ?? undefined;
-      trackClick(ref, ip, ua).catch(() => {});
+      // Track click — fire and forget, avoid crypto in Edge Runtime
+      if (ip && ua) {
+        const fp = `${ip}:${ua}`;
+        fetch(`/api/affiliate/track/click?ref=${ref}`, {
+          method: 'GET',
+          headers: { 'x-tracking-fp': fp },
+        }).catch(() => {});
+      }
     }
     return NextResponse.next();
   }

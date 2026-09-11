@@ -1,5 +1,4 @@
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { randomBytes } from 'crypto';
 
 export async function trackClick(refCode: string, ip?: string, userAgent?: string) {
   const supabase = getSupabaseAdmin();
@@ -15,6 +14,8 @@ export async function trackClick(refCode: string, ip?: string, userAgent?: strin
 }
 
 export function generateFingerprint(ip?: string, userAgent?: string): string {
-  const raw = `${ip ?? 'unknown'}:${userAgent ?? 'unknown'}:${randomBytes(8).toString('hex')}`;
-  return raw;
+  const array = new Uint8Array(8);
+  crypto.getRandomValues(array);
+  const hex = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+  return `${ip ?? 'unknown'}:${userAgent ?? 'unknown'}:${hex}`;
 }

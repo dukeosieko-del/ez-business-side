@@ -48,3 +48,5 @@ export function ServiceCatalogue() {
     </div>
   );
 }
+
+export default ServiceCatalogue;

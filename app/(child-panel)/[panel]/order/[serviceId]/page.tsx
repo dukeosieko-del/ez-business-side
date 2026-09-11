@@ -50,3 +50,5 @@ export function OrderForm({ serviceId }: { serviceId: string }) {
     </form>
   );
 }
+
+export default OrderForm;

@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { AffiliateLink } from '@/components/affiliate/AffiliateLink';

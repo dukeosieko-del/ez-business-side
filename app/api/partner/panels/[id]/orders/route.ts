@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const sessionCookie = req.cookies.get('jez_bs_session')?.value;
   if (!sessionCookie) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const { data: orders, count } = await supabase
     .from('orders')
     .select('*', { count: 'exact' })
-    .eq('panel_id', params.id)
+    .eq('panel_id', id)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 

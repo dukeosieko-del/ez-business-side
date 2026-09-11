@@ -1,28 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server';
+'use client';
+
+import { useState, useEffect } from 'react';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { OrdersTable } from '@/components/dashboard/OrdersTable';
+import { OrderFilters } from '@/components/dashboard/OrderFilters';
 
-export async function GET(req: NextRequest) {
-  const sessionCookie = req.cookies.get('jez_bs_session')?.value;
-  if (!sessionCookie) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export default function PanelOrdersPage() {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { searchParams } = new URL(req.url);
-  const panelId = searchParams.get('panel_id');
-  const status = searchParams.get('status');
-  const page = Number(searchParams.get('page') ?? 1);
-  const limit = Number(searchParams.get('limit') ?? 20);
-  const offset = (page - 1) * limit;
+  useEffect(() => {
+    const load = async () => {
+      const supabase = getSupabaseAdmin();
+      const { data } = await supabase.from('orders').select('*');
+      setOrders(data ?? []);
+      setLoading(false);
+    };
+    load();
+  }, []);
 
-  const supabase = getSupabaseAdmin();
-  let query = supabase.from('orders').select('*', { count: 'exact' });
-
-  if (panelId) query = query.eq('panel_id', panelId);
-  if (status) query = query.eq('status', status);
-
-  const { data: orders, count } = await query
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  return NextResponse.json({ success: true, data: { orders, total: count ?? 0, page, limit } });
+  return (
+    <main style={{ padding: '24px' }}>
+      <h1>Panel Orders</h1>
+      <OrderFilters onFilter={() => {}} />
+      {loading ? <div>Loading...</div> : <OrdersTable orders={orders} />}
+    </main>
+  );
 }
