@@ -1,20 +1,15 @@
-import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { checkDatabase } from '@/lib/monitoring/health';
 
-export async function GET() {
-  const checks: Record<string, string> = {};
-
-  try {
-    const supabase = getSupabaseAdmin();
-    const { error } = await supabase.from('partners').select('id').limit(1);
-    checks.supabase = error ? 'error' : 'ok';
-  } catch {
-    checks.supabase = 'error';
-  }
+export async function GET(req: NextRequest) {
+  const db = await checkDatabase();
 
   return NextResponse.json({
-    status: Object.values(checks).every((v) => v === 'ok') ? 'ok' : 'degraded',
-    checks,
+    status: 'ok',
     timestamp: new Date().toISOString(),
+    dependencies: {
+      database: db.ok ? 'healthy' : 'unhealthy',
+      ...(db.latency ? { dbLatencyMs: db.latency } : {}),
+    },
   });
 }

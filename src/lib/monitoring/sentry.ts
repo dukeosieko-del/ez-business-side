@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { env } from '@/lib/config/env';
 
-export function initSentry() {
+export function initSentry(): void {
   if (!env.SENTRY_DSN) return;
 
   Sentry.init({
@@ -19,3 +19,6 @@ export function initSentry() {
 }
 
 export { Sentry };
+export function captureError(error: Error, context?: Record<string, unknown>): void {
+  Sentry.captureException(error, { extra: context });
+}
