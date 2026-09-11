@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/tenant/resolve';
+import { trackClick } from '@/lib/affiliate/track';
 
 const PROTECTED_PATHS = ['/dashboard', '/partner', '/settings'];
-const PUBLIC_PATHS = ['/', '/auth', '/_next', '/api/health', '/favicon.ico'];
+const PUBLIC_PATHS = ['/', '/auth', '/_next', '/api/health', '/favicon.ico', '/api/affiliate'];
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = (request.headers.get('host') ?? '').toLowerCase().split(':')[0];
 
@@ -22,6 +23,12 @@ export function middleware(request: NextRequest) {
   }
 
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+    const ref = request.nextUrl.searchParams.get('ref');
+    if (ref) {
+      const ip = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? undefined;
+      const ua = request.headers.get('user-agent') ?? undefined;
+      trackClick(ref, ip, ua).catch(() => {});
+    }
     return NextResponse.next();
   }
 
