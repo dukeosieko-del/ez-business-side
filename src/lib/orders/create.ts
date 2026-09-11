@@ -1,30 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { z } from 'zod';
+
+const createOrderSchema = z.object({
+  panel_id: z.string().uuid(),
+  service_id: z.string().uuid(),
+  child_user_id: z.string().uuid(),
+  quantity: z.number().min(1),
+  link: z.string().url(),
+});
 
 export async function POST(req: NextRequest) {
-  const sessionCookie = req.cookies.get('jez_child_session')?.value;
-  if (!sessionCookie) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const body = await req.json();
+  const parsed = createOrderSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
   }
+
+  const { panel_id, service_id, child_user_id, quantity, link } = parsed.data;
 
   const supabase = getSupabaseAdmin();
-
-  const { data: session } = await supabase
-    .from('child_users')
-    .select('id, panel_id')
-    .eq('id', sessionCookie)
-    .single();
-
-  if (!session) {
-    return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
-  }
-
-  const body = await req.json();
-  const { panel_id, service_id, quantity, link } = body;
-
-  if (!panel_id || !service_id || !quantity || !link) {
-    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-  }
 
   const { data: service } = await supabase
     .from('services')
@@ -37,6 +33,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Service not found' }, { status: 404 });
   }
 
+  const { data: childUser } = await supabase
+    .from('child_users')
+    .select('id, panel_id')
+    .eq('id', child_user_id)
+    .eq('panel_id', panel_id)
+    .single();
+
+  if (!childUser) {
+    return NextResponse.json({ error: 'Child user not found' }, { status: 404 });
+  }
+
   const totalCharge = service.price * quantity;
   const totalCost = service.cost * quantity;
   const markup = totalCharge - totalCost;
@@ -46,7 +53,7 @@ export async function POST(req: NextRequest) {
     .insert({
       panel_id,
       service_id,
-      child_user_id: session.id,
+      child_user_id,
       quantity,
       link,
       charge: totalCharge,
