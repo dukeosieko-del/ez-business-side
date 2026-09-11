@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { createSession } from '@/lib/auth/session';
 import { env } from '@/lib/config/env';
 import { createHmac, randomUUID } from 'crypto';
+import { isOnboarded } from '@/lib/onboarding/state';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -59,14 +60,16 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseAdmin();
     const { data: existingPartner } = await supabase
       .from('partners')
-      .select('id, status')
+      .select('id, onboarding_state, status')
       .eq('janjez_user_id', janjez_user_id)
       .single();
 
     let partnerId: string;
+    let onboardingState: string = 'pending';
 
     if (existingPartner) {
       partnerId = existingPartner.id;
+      onboardingState = existingPartner.onboarding_state ?? 'pending';
     } else {
       const { data: newPartner, error: createError } = await supabase
         .from('partners')
@@ -76,8 +79,9 @@ export async function GET(request: NextRequest) {
           display_name: full_name ?? email.split('@')[0],
           phone: phone ?? '',
           status: 'pending',
+          onboarding_state: 'pending',
         })
-        .select('id')
+        .select('id, onboarding_state')
         .single();
 
       if (createError || !newPartner) {
@@ -85,6 +89,7 @@ export async function GET(request: NextRequest) {
       }
 
       partnerId = newPartner.id;
+      onboardingState = newPartner.onboarding_state;
     }
 
     await createSession({
@@ -97,8 +102,12 @@ export async function GET(request: NextRequest) {
       actor_type: 'partner',
       actor_id: partnerId,
       action: 'sso_login',
-      metadata: { janjez_user_id },
+      metadata: { janjez_user_id, onboardingState },
     });
+
+    if (!isOnboarded(onboardingState as Parameters<typeof isOnboarded>[0])) {
+      return NextResponse.redirect(new URL('/onboarding', request.url));
+    }
 
     return NextResponse.redirect(new URL('/dashboard', request.url));
   } catch (err) {
