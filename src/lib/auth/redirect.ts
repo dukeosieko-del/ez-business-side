@@ -19,7 +19,7 @@ export async function getOnboardingRedirect(partnerId: string): Promise<Redirect
   if (!partner) return null;
 
   if (!isOnboarded(partner.onboarding_state as Parameters<typeof isOnboarded>[0])) {
-    return { pathname: '/onboarding' };
+    return { pathname: '/dashboard' };
   }
 
   const panelsExist = await hasPanels(partnerId);

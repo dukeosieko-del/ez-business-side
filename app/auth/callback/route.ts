@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!isOnboarded(onboardingState as Parameters<typeof isOnboarded>[0])) {
-      return NextResponse.redirect(new URL('/onboarding', request.url));
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
     return NextResponse.redirect(new URL('/dashboard', request.url));
