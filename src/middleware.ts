@@ -12,6 +12,15 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = (request.headers.get('host') ?? '').toLowerCase().split(':')[0];
 
+  if (host.endsWith('.partners.janjez.social')) {
+    const subdomain = host.replace('.partners.janjez.social', '');
+    if (subdomain && !pathname.startsWith(`/${subdomain}`)) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${subdomain}${url.pathname}`;
+      return NextResponse.rewrite(url);
+    }
+  }
+
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
