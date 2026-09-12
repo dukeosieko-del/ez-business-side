@@ -8,7 +8,7 @@ interface Service {
   id: string;
   name: string;
   description: string;
-  price: number;
+  child_price: number;
   cost: number;
 }
 
@@ -21,7 +21,7 @@ export function ServiceCatalogue() {
     const load = async () => {
       const supabase = getSupabaseAdmin();
       const { data } = await supabase
-        .from('services')
+        .from('child_services')
         .select('*')
         .eq('panel_id', panel);
       setServices((data ?? []) as Service[]);
@@ -40,7 +40,7 @@ export function ServiceCatalogue() {
           <div key={service.id} style={{ border: '1px solid #ddd', padding: '16px', borderRadius: '8px' }}>
             <h3>{service.name}</h3>
             <p>{service.description}</p>
-            <p>Price: KES {service.price} | Cost: KES {service.cost}</p>
+            <p>Price: KES {service.child_price} | Cost: KES {service.cost}</p>
             <a href={`/order/${service.id}`}>Order</a>
           </div>
         ))}

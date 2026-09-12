@@ -26,14 +26,14 @@ export async function middleware(request: NextRequest) {
     if (ref) {
       const ip = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? undefined;
       const ua = request.headers.get('user-agent') ?? undefined;
-      // Track click — fire and forget, avoid crypto in Edge Runtime
-      if (ip && ua) {
-        const fp = `${ip}:${ua}`;
-        fetch(`/api/affiliate/track/click?ref=${ref}`, {
-          method: 'GET',
-          headers: { 'x-tracking-fp': fp },
-        }).catch(() => {});
-      }
+      const origin = request.nextUrl.origin;
+      const params = new URLSearchParams();
+      params.set('ref', ref);
+      if (ip) params.set('ip', ip);
+      if (ua) params.set('ua', ua);
+      fetch(`${origin}/api/affiliate/track/click?${params.toString()}`, {
+        method: 'GET',
+      }).catch(() => {});
     }
     return NextResponse.next();
   }

@@ -11,7 +11,7 @@ export default function OrderDetailPage() {
   useEffect(() => {
     const load = async () => {
       const supabase = getSupabaseAdmin();
-      const { data } = await supabase.from('orders').select('*').eq('id', id).single();
+      const { data } = await supabase.from('child_orders').select('*').eq('id', id).single();
       setOrder(data);
     };
     load();

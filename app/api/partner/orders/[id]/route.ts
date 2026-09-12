@@ -9,7 +9,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   const supabase = getSupabaseAdmin();
-  const { data: order } = await supabase.from('orders').select('*')    .eq('id', id).single();
+  const { data: order } = await supabase.from('child_orders').select('*').eq('id', id).single();
 
   if (!order) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });

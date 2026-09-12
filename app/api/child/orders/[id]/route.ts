@@ -10,7 +10,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const supabase = getSupabaseAdmin();
   const { data: order } = await supabase
-    .from('orders')
+    .from('child_orders')
     .select('*')
     .eq('id', id)
     .single();

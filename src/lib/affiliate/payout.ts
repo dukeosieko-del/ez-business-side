@@ -1,5 +1,4 @@
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { randomBytes } from 'crypto';
 
 export async function createPayout(affiliateId: string, amount: number) {
   const supabase = getSupabaseAdmin();
@@ -13,9 +12,11 @@ export async function createPayout(affiliateId: string, amount: number) {
   if (!affiliate) throw new Error('Affiliate not found');
   if (amount < 500) throw new Error('Minimum payout is KES 500');
 
-  const mpesaRef = `PAYOUT-${randomBytes(8).toString('hex')}`;
+  const array = new Uint8Array(8);
+  crypto.getRandomValues(array);
+  const mpesaRef = `PAYOUT-${Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('')}`;
 
-  const { data: payout, error } = await supabase.from('affiliate_payouts').insert({
+  const { data, error } = await supabase.from('affiliate_payouts').insert({
     affiliate_id: affiliateId,
     amount,
     mpesa_ref: mpesaRef,
@@ -23,5 +24,5 @@ export async function createPayout(affiliateId: string, amount: number) {
   }).select().single();
 
   if (error) throw error;
-  return payout;
+  return data;
 }

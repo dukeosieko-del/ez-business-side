@@ -4,12 +4,10 @@ import { trackClick } from '@/lib/affiliate/track';
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const ref = searchParams.get('ref');
-  const fp = req.headers.get('x-tracking-fp');
+  const ip = searchParams.get('ip') ?? undefined;
+  const ua = searchParams.get('ua') ?? undefined;
 
-  if (ref && fp) {
-    const parts = fp.split(':');
-    const ip = parts[0];
-    const ua = parts.slice(1).join(':');
+  if (ref) {
     trackClick(ref, ip, ua).catch(() => {});
   }
 

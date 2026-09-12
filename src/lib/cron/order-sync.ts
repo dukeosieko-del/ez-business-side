@@ -3,7 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 export async function syncOrders(): Promise<void> {
   const supabase = getSupabaseAdmin();
   const { data: orders } = await supabase
-    .from('orders')
+    .from('child_orders')
     .select('*')
     .eq('status', 'pending');
 

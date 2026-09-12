@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { env } from '@/lib/config/env';
 import { mpesaConfig } from './config';
 
 interface MpesaResponse<T> {
@@ -115,7 +116,7 @@ export async function initiateStkPush(
       PartyA: phone,
       PartyB: mpesaConfig.shortcode,
       PhoneNumber: phone,
-      ReturnURL: 'https://example.com/callback',
+      ReturnURL: `${env.NEXT_PUBLIC_SITE_URL}/api/partner/activate/callback`,
       InvoiceNo: idempotencyKey,
       OrgAccountReference: idempotencyKey,
       TransactionDesc: 'Account activation',

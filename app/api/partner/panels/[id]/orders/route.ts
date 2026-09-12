@@ -15,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const supabase = getSupabaseAdmin();
   const { data: orders, count } = await supabase
-    .from('orders')
+    .from('child_orders')
     .select('*', { count: 'exact' })
     .eq('panel_id', id)
     .order('created_at', { ascending: false })

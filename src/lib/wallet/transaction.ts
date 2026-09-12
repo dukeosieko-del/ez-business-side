@@ -9,27 +9,29 @@ export async function createTransaction(params: {
   metadata?: Record<string, unknown>;
 }) {
   const supabase = getSupabaseAdmin();
-
-  const { data: partner } = await supabase
-    .from('partners')
-    .select('wallet_balance')
-    .eq('id', params.partnerId)
-    .single();
-
+  const { data: partner } = await supabase.from('partners').select('wallet_balance').eq('id', params.partnerId).single();
   const before = partner?.wallet_balance ?? 0;
   const after = params.direction === 'credit' ? before + params.amount : before - params.amount;
 
-  const { data, error } = await supabase.from('wallet_transactions').insert({
-    partner_id: params.partnerId,
-    amount: params.amount,
-    direction: params.direction,
-    category: params.category,
-    reference: params.reference ?? null,
-    balance_before: before,
-    balance_after: after,
-    metadata: params.metadata ?? {},
-  }).select().single();
-
-  if (error) throw error;
-  return data;
+  if (params.direction === 'credit') {
+    const { data, error } = await supabase.rpc('credit_wallet', {
+      p_partner_id: params.partnerId,
+      p_amount: params.amount,
+      p_category: params.category,
+      p_reference: params.reference ?? null,
+      p_metadata: params.metadata ?? {},
+    }).single();
+    if (error) throw error;
+    return data;
+  } else {
+    const { data, error } = await supabase.rpc('debit_wallet', {
+      p_partner_id: params.partnerId,
+      p_amount: params.amount,
+      p_category: params.category,
+      p_reference: params.reference ?? null,
+      p_metadata: params.metadata ?? {},
+    }).single();
+    if (error) throw error;
+    return data;
+  }
 }

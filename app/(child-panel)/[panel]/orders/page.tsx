@@ -15,7 +15,7 @@ export default function PanelOrdersPage() {
     const load = async () => {
       const supabase = getSupabaseAdmin();
       const { data } = await supabase
-        .from('orders')
+        .from('child_orders')
         .select('*')
         .eq('panel_id', id);
       setOrders(data ?? []);

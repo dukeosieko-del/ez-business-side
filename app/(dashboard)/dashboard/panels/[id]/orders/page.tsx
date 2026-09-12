@@ -12,7 +12,7 @@ export default function PanelOrdersPage() {
   useEffect(() => {
     const load = async () => {
       const supabase = getSupabaseAdmin();
-      const { data } = await supabase.from('orders').select('*');
+      const { data } = await supabase.from('child_orders').select('*');
       setOrders(data ?? []);
       setLoading(false);
     };

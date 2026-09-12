@@ -4,7 +4,7 @@ export async function getAdminStats() {
   const supabase = getSupabaseAdmin();
 
   const { count: partners } = await supabase.from('partners').select('*', { count: 'exact' });
-  const { count: orders } = await supabase.from('orders').select('*', { count: 'exact' });
+  const { count: orders } = await supabase.from('child_orders').select('*', { count: 'exact' });
   const { count: withdrawals } = await supabase.from('withdrawals').select('*', { count: 'exact' });
   const { count: transactions } = await supabase.from('wallet_transactions').select('*', { count: 'exact' });
 

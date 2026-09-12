@@ -9,7 +9,7 @@ interface SyncResult {
 export async function syncPendingOrders(): Promise<SyncResult> {
   const supabase = getSupabaseAdmin();
   const { data: orders } = await supabase
-    .from('orders')
+    .from('child_orders')
     .select('*')
     .eq('status', 'pending');
 
@@ -36,7 +36,7 @@ export async function syncPendingOrders(): Promise<SyncResult> {
       });
 
       if (response.ok) {
-        await supabase.from('orders').update({ status: 'processing' }).eq('id', order.id);
+        await supabase.from('child_orders').update({ status: 'processing' }).eq('id', order.id);
         synced++;
       } else {
         failed++;
