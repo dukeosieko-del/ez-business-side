@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function HomePage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-green-900 text-white">
@@ -6,12 +8,12 @@ export default function HomePage() {
         <p className="text-xl mb-8">
           Launch your own white-label SMM panel. Powered by Janjez.
         </p>
-        <a
+        <Link
           href="/auth/sign-in"
           className="bg-green-600 hover:bg-green-700 px-8 py-4 rounded-lg font-semibold"
         >
           Get Started
-        </a>
+        </Link>
       </div>
     </main>
   );
