@@ -32,4 +32,9 @@ const envSchema = z.object({
   HMAC_SECRET: z.string().min(32),
 });
 
-export const env = envSchema.parse(process.env);
+const isProductionBuild = process.env.NEXT_PHASE === 'phase-production-build';
+
+// Keep module imports build-safe; request-time code still validates the full runtime environment.
+export const env = (isProductionBuild
+  ? envSchema.partial().parse(process.env)
+  : envSchema.parse(process.env)) as z.infer<typeof envSchema>;
