@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function AuthErrorPage({
   searchParams,
 }: {
@@ -13,12 +15,12 @@ export default function AuthErrorPage({
         {searchParams.detail && (
           <p className="text-sm text-gray-500 mb-6">{searchParams.detail}</p>
         )}
-        <a
+        <Link
           href="/auth/sign-in"
           className="block w-full bg-green-600 hover:bg-green-700 text-white text-center py-3 rounded-lg font-semibold"
         >
           Try again
-        </a>
+        </Link>
       </div>
     </main>
   );
