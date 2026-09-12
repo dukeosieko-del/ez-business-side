@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { z } from 'zod';
+import { debitChildUser, refundChildUser } from '@/lib/wallet/child-balance';
 
 const createOrderSchema = z.object({
   panel_id: z.string().uuid(),
@@ -11,6 +12,11 @@ const createOrderSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const reservationKey = req.headers.get('idempotency-key');
+  if (!reservationKey) {
+    return NextResponse.json({ error: 'Idempotency-Key header required' }, { status: 400 });
+  }
+
   const body = await req.json();
   const parsed = createOrderSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
@@ -42,50 +48,71 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Insufficient child user balance' }, { status: 400 });
   }
 
-  const idempotencyKey = req.headers.get('idempotency-key') ?? `order-${child_user_id}-${service_id}-${Date.now()}`;
-
   const { data: existing } = await supabase
     .from('child_orders')
     .select('*')
-    .eq('idempotency_key', idempotencyKey)
-    .single();
+    .eq('idempotency_key', reservationKey)
+    .maybeSingle();
 
   if (existing) {
     return NextResponse.json({ success: true, data: existing });
   }
 
   try {
-    const { data: debitData, error: debitError } = await supabase
-      .from('child_users')
-      .update({ balance: childUser.balance - totalCharge })
-      .eq('id', child_user_id)
-      .eq('balance', childUser.balance)
+    const { data: panel } = await supabase
+      .from('child_panels')
+      .select('partner_id')
+      .eq('id', panel_id)
+      .single();
+
+    if (!panel) return NextResponse.json({ error: 'Panel not found' }, { status: 404 });
+
+    const { data: reserved, error: reserveError } = await supabase
+      .from('child_orders')
+      .insert({
+        panel_id, child_user_id, service_id, quantity, link,
+        charge: totalCharge, cost: totalCost, markup,
+        status: 'pending',
+        idempotency_key: reservationKey,
+      })
       .select()
       .single();
 
-    if (debitError || !debitData) {
-      return NextResponse.json({ error: 'Concurrent modification, please retry' }, { status: 409 });
+    if (reserveError?.code === '23505') {
+      const { data: winner } = await supabase
+        .from('child_orders')
+        .select('*')
+        .eq('idempotency_key', reservationKey)
+        .single();
+      return NextResponse.json({ success: true, data: winner });
+    }
+
+    if (reserveError || !reserved) {
+      return NextResponse.json({ error: 'Failed to reserve order' }, { status: 500 });
+    }
+
+    try {
+      await debitChildUser(child_user_id, totalCharge, childUser.balance);
+    } catch (err) {
+      await supabase.from('child_orders').update({ status: 'failed' }).eq('id', reserved.id);
+      return NextResponse.json({ error: 'Insufficient balance or concurrent modification' }, { status: 409 });
     }
 
     const { error: creditError } = await supabase.rpc('credit_wallet', {
-      p_partner_id: panel_id,
+      p_partner_id: panel.partner_id,
       p_amount: markup,
       p_category: 'order',
-      p_reference: idempotencyKey,
+      p_reference: reserved.id,
       p_metadata: { child_user_id, service_id, quantity },
     });
 
     if (creditError) {
-      await supabase
-        .from('child_users')
-        .update({ balance: childUser.balance })
-        .eq('id', child_user_id);
+      await refundChildUser(child_user_id, totalCharge);
+      await supabase.from('child_orders').update({ status: 'failed' }).eq('id', reserved.id);
       return NextResponse.json({ error: creditError.message, hint: 'Balance reverted' }, { status: 500 });
     }
 
     let janjezOrderId: string | null = null;
-    let orderStatus: 'pending' | 'processing' | 'failed' | 'failed_refunded' = 'pending';
-    let refundProcessed = false;
 
     try {
       const janjezRes = await fetch(
@@ -97,15 +124,9 @@ export async function POST(req: NextRequest) {
             'Authorization': `Bearer ${process.env.JANJEZ_MAIN_API_KEY ?? ''}`,
           },
           body: JSON.stringify({
-            panel_id,
-            service_id,
-            child_user_id,
-            quantity,
-            link,
-            charge: totalCharge,
-            cost: totalCost,
-            markup,
-            idempotency_key: idempotencyKey,
+            panel_id, service_id, child_user_id, quantity, link,
+            charge: totalCharge, cost: totalCost, markup,
+            idempotency_key: reservationKey,
           }),
           signal: AbortSignal.timeout(15000),
         }
@@ -113,56 +134,32 @@ export async function POST(req: NextRequest) {
 
       if (janjezRes.ok) {
         janjezOrderId = (await janjezRes.json()).id;
-        orderStatus = 'processing';
-      } else {
-        orderStatus = 'failed';
       }
     } catch {
-      orderStatus = 'failed';
+      // Janjez unreachable — handled below
     }
 
-    if (orderStatus === 'failed') {
-      const { error: refundError } = await supabase.rpc('debit_wallet', {
-        p_partner_id: panel_id,
+    if (!janjezOrderId) {
+      await refundChildUser(child_user_id, totalCharge);
+      await supabase.rpc('debit_wallet', {
+        p_partner_id: panel.partner_id,
         p_amount: markup,
         p_category: 'order_refund',
-        p_reference: `refund-${idempotencyKey}`,
+        p_reference: `refund-${reserved.id}`,
       });
-
-      if (!refundError) {
-        await supabase.rpc('credit_wallet', {
-          p_partner_id: child_user_id,
-          p_amount: totalCharge,
-          p_category: 'order_refund',
-          p_reference: `refund-${idempotencyKey}`,
-        });
-        refundProcessed = true;
-      }
-
-      orderStatus = refundProcessed ? 'failed_refunded' : 'failed';
+      await supabase
+        .from('child_orders')
+        .update({ status: 'failed_refunded', janjez_order_id: null })
+        .eq('id', reserved.id);
+      return NextResponse.json({ error: 'Order failed. Refund processed.' }, { status: 502 });
     }
 
-    const { data: order, error: orderError } = await supabase
+    await supabase
       .from('child_orders')
-      .insert({
-        panel_id, service_id, child_user_id, quantity, link,
-        charge: totalCharge, cost: totalCost, markup,
-        status: orderStatus,
-        janjez_order_id: janjezOrderId,
-        idempotency_key: idempotencyKey,
-      }).select().single();
+      .update({ status: 'processing', janjez_order_id: janjezOrderId })
+      .eq('id', reserved.id);
 
-    if (orderError) return NextResponse.json({ error: orderError.message }, { status: 500 });
-
-    if (orderStatus === 'failed_refunded') {
-      return NextResponse.json({
-        success: false,
-        error: 'Order failed. Refund processed.',
-        data: order,
-      }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true, data: order });
+    return NextResponse.json({ success: true, data: { ...reserved, janjez_order_id: janjezOrderId } });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown';
     return NextResponse.json({ error: message }, { status: 500 });
