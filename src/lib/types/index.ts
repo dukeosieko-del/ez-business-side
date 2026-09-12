@@ -78,12 +78,13 @@ export interface ChildOrder {
   id: string;
   panel_id: string;
   child_user_id: string | null;
-  child_service_id: string;
+  service_id: string;
   janjez_order_id: string | null;
   link: string;
   quantity: number;
   charge: number;
   cost: number;
+  markup: number;
   status: OrderStatus;
   provider_order_id: string | null;
   error_message: string | null;

@@ -58,7 +58,42 @@ Register new partner.
 ### POST /affiliate/convert
 Record affiliate conversion.
 
-## Response Envelope
+## Webhook Security — HMAC Secret Sharing
+
+Janjez main signs outgoing webhooks using HMAC-SHA256. The Business Side verifies them using the **same shared secret** stored in the `HMAC_SECRET` environment variable.
+
+**Shared secret mechanism:**
+
+1. Janjez main and Business Side share a single HMAC secret provisioned during integration setup.
+2. The secret is stored as `HMAC_SECRET` in both systems' environment variables.
+3. Janjez main signs webhook bodies with `createHmac('sha256', HMAC_SECRET)`.
+4. Business Side verifies with `verifyHmacSignature()` in `src/lib/hmac/verify.ts`.
+5. The secret is rotated annually or on compromise. Rotation requires updating both systems simultaneously.
+
+**Verification flow:**
+
+```
+Janjez main → POST /api/webhooks/janjez/order-status
+  Headers:
+    x-janjez-signature: <HMAC-SHA256(body, HMAC_SECRET)>
+    x-janjez-signature: <HMAC-SHA256(body, HMAC_SECRET)>
+  Body: { order_id, status, ... }
+
+Business Side:
+  1. Read x-janjez-signature header
+  2. Compute HMAC-SHA256(request body, env.HMAC_SECRET)
+  3. Compare with timingSafeEqual
+  4. If match → process webhook
+  5. If mismatch → reject 401
+```
+
+**Configuration:**
+
+| Variable | Description | Shared with |
+|----------|-------------|-------------|
+| `HMAC_SECRET` | HMAC secret for webhook verification | Janjez main |
+
+**See also:** `src/lib/hmac/verify.ts`
 
 All responses:
 ```json

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS child_orders (
   charge NUMERIC NOT NULL,
   cost NUMERIC NOT NULL,
   markup NUMERIC NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'failed_refunded', 'cancelled')),
   janjez_order_id TEXT,
   idempotency_key TEXT UNIQUE,
   metadata JSONB DEFAULT '{}'::jsonb,

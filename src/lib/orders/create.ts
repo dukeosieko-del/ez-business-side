@@ -42,21 +42,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Insufficient child user balance' }, { status: 400 });
   }
 
-  const idempotencyKey = `order-${child_user_id}-${service_id}-${Date.now()}`;
+  const idempotencyKey = req.headers.get('idempotency-key') ?? `order-${child_user_id}-${service_id}-${Date.now()}`;
+
+  const { data: existing } = await supabase
+    .from('child_orders')
+    .select('*')
+    .eq('idempotency_key', idempotencyKey)
+    .single();
+
+  if (existing) {
+    return NextResponse.json({ success: true, data: existing });
+  }
 
   try {
-    const { error: debitError } = await supabase
+    const { data: debitData, error: debitError } = await supabase
       .from('child_users')
       .update({ balance: childUser.balance - totalCharge })
       .eq('id', child_user_id)
-      .eq('balance', childUser.balance);
+      .eq('balance', childUser.balance)
+      .select()
+      .single();
 
-    if (debitError) {
-      const code = (debitError as { code?: string })?.code;
-      if (code === '23505') {
-        return NextResponse.json({ error: 'Balance already deducted (concurrent)' }, { status: 409 });
-      }
-      return NextResponse.json({ error: debitError.message ?? 'Balance debit failed' }, { status: 500 });
+    if (debitError || !debitData) {
+      return NextResponse.json({ error: 'Concurrent modification, please retry' }, { status: 409 });
     }
 
     const { error: creditError } = await supabase.rpc('credit_wallet', {
@@ -76,7 +84,8 @@ export async function POST(req: NextRequest) {
     }
 
     let janjezOrderId: string | null = null;
-    let orderStatus: 'pending' | 'processing' | 'failed' = 'pending';
+    let orderStatus: 'pending' | 'processing' | 'failed' | 'failed_refunded' = 'pending';
+    let refundProcessed = false;
 
     try {
       const janjezRes = await fetch(
@@ -112,6 +121,27 @@ export async function POST(req: NextRequest) {
       orderStatus = 'failed';
     }
 
+    if (orderStatus === 'failed') {
+      const { error: refundError } = await supabase.rpc('debit_wallet', {
+        p_partner_id: panel_id,
+        p_amount: markup,
+        p_category: 'order_refund',
+        p_reference: `refund-${idempotencyKey}`,
+      });
+
+      if (!refundError) {
+        await supabase.rpc('credit_wallet', {
+          p_partner_id: child_user_id,
+          p_amount: totalCharge,
+          p_category: 'order_refund',
+          p_reference: `refund-${idempotencyKey}`,
+        });
+        refundProcessed = true;
+      }
+
+      orderStatus = refundProcessed ? 'failed_refunded' : 'failed';
+    }
+
     const { data: order, error: orderError } = await supabase
       .from('child_orders')
       .insert({
@@ -123,6 +153,14 @@ export async function POST(req: NextRequest) {
       }).select().single();
 
     if (orderError) return NextResponse.json({ error: orderError.message }, { status: 500 });
+
+    if (orderStatus === 'failed_refunded') {
+      return NextResponse.json({
+        success: false,
+        error: 'Order failed. Refund processed.',
+        data: order,
+      }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true, data: order });
   } catch (err) {
