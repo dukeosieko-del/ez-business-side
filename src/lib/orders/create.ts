@@ -42,66 +42,84 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Insufficient child user balance' }, { status: 400 });
   }
 
-  try {
-    await supabase.rpc('debit_wallet', {
-      p_partner_id: child_user_id,
-      p_amount: totalCharge,
-      p_category: 'order',
-      p_reference: `order-init-${Date.now()}`,
-    });
+  const idempotencyKey = `order-${child_user_id}-${service_id}-${Date.now()}`;
 
-    await supabase.rpc('credit_wallet', {
+  try {
+    const { error: debitError } = await supabase
+      .from('child_users')
+      .update({ balance: childUser.balance - totalCharge })
+      .eq('id', child_user_id)
+      .eq('balance', childUser.balance);
+
+    if (debitError) {
+      const code = (debitError as { code?: string })?.code;
+      if (code === '23505') {
+        return NextResponse.json({ error: 'Balance already deducted (concurrent)' }, { status: 409 });
+      }
+      return NextResponse.json({ error: debitError.message ?? 'Balance debit failed' }, { status: 500 });
+    }
+
+    const { error: creditError } = await supabase.rpc('credit_wallet', {
       p_partner_id: panel_id,
       p_amount: markup,
       p_category: 'order',
-      p_reference: `order-markup-${Date.now()}`,
+      p_reference: idempotencyKey,
+      p_metadata: { child_user_id, service_id, quantity },
     });
 
-    const { data: janjezOrder, error: janjezError } = await fetch(
-      `${process.env.JANJEZ_MAIN_API_URL ?? ''}/orders`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.JANJEZ_MAIN_API_KEY ?? ''}`,
-        },
-        body: JSON.stringify({
-          panel_id,
-          service_id,
-          child_user_id,
-          quantity,
-          link,
-          charge: totalCharge,
-          cost: totalCost,
-          markup,
-          idempotency_key: `order-${Date.now()}`,
-        }),
-        signal: AbortSignal.timeout(15000),
-      }
-    ).then(r => r.json());
+    if (creditError) {
+      await supabase
+        .from('child_users')
+        .update({ balance: childUser.balance })
+        .eq('id', child_user_id);
+      return NextResponse.json({ error: creditError.message, hint: 'Balance reverted' }, { status: 500 });
+    }
 
-    if (janjezError || !janjezOrder) {
-      await supabase.rpc('credit_wallet', {
-        p_partner_id: child_user_id,
-        p_amount: totalCharge,
-        p_category: 'order_refund',
-        p_reference: `order-rollback-${Date.now()}`,
-      });
-      await supabase.rpc('debit_wallet', {
-        p_partner_id: panel_id,
-        p_amount: markup,
-        p_category: 'order_refund',
-        p_reference: `order-rollback-${Date.now()}`,
-      });
-      return NextResponse.json({ error: 'Janjez API failed, rolled back' }, { status: 500 });
+    let janjezOrderId: string | null = null;
+    let orderStatus: 'pending' | 'processing' | 'failed' = 'pending';
+
+    try {
+      const janjezRes = await fetch(
+        `${process.env.JANJEZ_MAIN_API_URL ?? ''}/orders`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.JANJEZ_MAIN_API_KEY ?? ''}`,
+          },
+          body: JSON.stringify({
+            panel_id,
+            service_id,
+            child_user_id,
+            quantity,
+            link,
+            charge: totalCharge,
+            cost: totalCost,
+            markup,
+            idempotency_key: idempotencyKey,
+          }),
+          signal: AbortSignal.timeout(15000),
+        }
+      );
+
+      if (janjezRes.ok) {
+        janjezOrderId = (await janjezRes.json()).id;
+        orderStatus = 'processing';
+      } else {
+        orderStatus = 'failed';
+      }
+    } catch {
+      orderStatus = 'failed';
     }
 
     const { data: order, error: orderError } = await supabase
       .from('child_orders')
       .insert({
         panel_id, service_id, child_user_id, quantity, link,
-        charge: totalCharge, cost: totalCost, markup, status: 'processing',
-        janjez_order_id: janjezOrder.id,
+        charge: totalCharge, cost: totalCost, markup,
+        status: orderStatus,
+        janjez_order_id: janjezOrderId,
+        idempotency_key: idempotencyKey,
       }).select().single();
 
     if (orderError) return NextResponse.json({ error: orderError.message }, { status: 500 });
