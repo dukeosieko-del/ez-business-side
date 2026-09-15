@@ -3,8 +3,16 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { syncServices } from '@/lib/services/sync';
+
+type Service = {
+  id: string;
+  janjez_service_id: string;
+  child_price: number;
+  child_min_quantity: number;
+  child_max_quantity: number;
+  is_visible: boolean;
+  custom_name: string | null;
+};
 
 export default function PanelDetailPage() {
   const params = useParams();
@@ -15,35 +23,18 @@ export default function PanelDetailPage() {
     status: string;
     created_at: string;
   } | null>(null);
-  const [services, setServices] = useState<
-    Array<{
-      id: string;
-      janjez_service_id: string;
-      child_price: number;
-      child_min_quantity: number;
-      child_max_quantity: number;
-      is_visible: boolean;
-      custom_name: string | null;
-    }>
-  >([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const supabase = getSupabaseAdmin();
-        const { data: panelData } = await supabase
-          .from('child_panels')
-          .select('*')
-          .eq('id', panelId)
-          .single();
-        setPanel(panelData);
-
-        const { data: serviceData } = await supabase
-          .from('child_services')
-          .select('*')
-          .eq('panel_id', panelId);
-        setServices(serviceData ?? []);
+        const res = await fetch(`/api/partner/panels/${panelId}`);
+        const json = await res.json();
+        if (json.success) {
+          setPanel(json.data.panel);
+          setServices(json.data.services ?? []);
+        }
       } finally {
         setLoading(false);
       }
@@ -53,8 +44,11 @@ export default function PanelDetailPage() {
 
   async function handleSync() {
     try {
-      const synced = await syncServices(panelId);
-      setServices((prev) => [...prev, ...synced]);
+      const res = await fetch(`/api/partner/panels/${panelId}/sync`, { method: 'POST' });
+      const json = await res.json();
+      if (json.success) {
+        setServices((prev) => [...prev, ...json.data]);
+      }
     } catch {
       // Sync will fail gracefully since Janjez API doesn't exist yet
     }

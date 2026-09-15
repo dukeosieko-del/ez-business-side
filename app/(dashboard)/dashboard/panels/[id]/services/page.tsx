@@ -4,7 +4,6 @@ import { useParams } from 'next/navigation';
 import ImportServicesButton from '@/components/services/ImportServicesButton';
 import PriceEditor from '@/components/services/PriceEditor';
 import { useState } from 'react';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 export default function PanelServicesPage() {
   const params = useParams();

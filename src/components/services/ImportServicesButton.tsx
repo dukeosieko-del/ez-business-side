@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { importServices } from '@/lib/services/import';
 
 interface ImportServicesButtonProps {
   panelId: string;
@@ -20,9 +19,14 @@ export default function ImportServicesButton({
     setImporting(true);
     setError(null);
     try {
-      const imported = await importServices(panelId);
-      setCount(imported.length);
-      onImportComplete?.(imported.length);
+      const res = await fetch(`/api/partner/panels/${panelId}/services/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error?.message ?? 'Import failed');
+      setCount(json.data.length);
+      onImportComplete?.(json.data.length);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Import failed');
     } finally {

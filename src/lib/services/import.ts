@@ -1,3 +1,4 @@
+import 'server-only';
 import { callJanjez } from '@/lib/janjez-api/client';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 
