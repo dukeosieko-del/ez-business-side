@@ -10,7 +10,7 @@
 
 - Repo: `dukeosieko-del/ez-business-side`
 - Branch: `main`
-- HEAD: `c2ba930999d7b13bc133515a42a601e60b667a82`
+- HEAD: `c100c67` (docs committed; source work on `kilo/emerald-dolphin-b37`)
 - Tracked files: 202
 
 ## 2. Deployment State
@@ -29,18 +29,15 @@
 
 ## 4. Blockers
 
-Reference Section 4 of BUSINESS-SIDE-WORKTREE.md.
-
-| # | Blocker | Impact |
-|---|---------|--------|
-| 1 | Janjez main `/oauth/authorize` endpoint missing | SSO login fails with 404 |
-| 2 | Janjez main `/api/business/v1/*` endpoints missing | Service import, fulfillment, affiliate conversion blocked |
-| 3 | Island M-Pesa Daraja credentials are sandbox placeholders | KES 1,499 activation cannot complete real payment |
-| 4 | Pesapal integration not started | Alternative payment gateway unavailable |
-| 5 | Card payment integration not started | Card payments unavailable |
-| 6 | Full drag-and-drop UI editor is partial | Partners cannot fully customize layout |
-| 7 | Landing page final layout in progress | Marketing page incomplete |
-| 8 | Timeline estimate from original plan no longer authoritative | Build running longer than 14 weeks |
+| # | Blocker | Impact | Resolution Required |
+|---|---------|--------|---------------------|
+| 1 | Janjez main `/oauth/authorize` endpoint missing | SSO login fails with 404 | Build on main side |
+| 2 | Janjez main `/api/business/v1/*` endpoints missing | Service import, fulfillment, affiliate conversion blocked | Build on main side |
+| 3 | Island M-Pesa Daraja credentials are sandbox placeholders | KES 1,499 activation cannot complete real payment | Owner obtains Daraja credentials |
+| 4 | Pesapal integration not started | Alternative payment gateway unavailable | Build (Phase 6) |
+| 5 | Card payment integration not started | Card payments unavailable | Build (Phase 6) |
+| 6 | Full drag-and-drop UI editor is partial | Partners cannot fully customize layout | Build (Phase 5) |
+| 7 | Janjez main API dependencies block Phase 4+ | Child panel ordering, fulfillment cannot function | Build on main side |
 
 ## 5. Progress vs Original Vision
 
@@ -55,7 +52,7 @@ Reference Section 4 of BUSINESS-SIDE-WORKTREE.md.
 
 ## 6. Recommendations
 
-1. **Priority 1:** Resolve Janjez main API dependencies (Phase 2). Three critical blockers (#1, #2, and the main API extensions) block downstream functionality. Coordinate with Janjez main team.
+1. **Priority 1:** Resolve Janjez main API dependencies (Phase 2). Three critical blockers (#1, #2) block all downstream functionality. Coordinate with Janjez main team.
 2. **Priority 2:** Obtain production M-Pesa Daraja credentials. Sandbox only allows testing, not live activation.
 3. **Priority 3:** Fill missing environment variables on Vercel before beta launch. At least 9 critical values are empty.
 4. **Priority 4:** Complete landing page finalization — currently in progress per recent commits.
@@ -65,6 +62,6 @@ Reference Section 4 of BUSINESS-SIDE-WORKTREE.md.
 
 1. Owner to provide Janjez main API access / Phase 2 requirements
 2. Owner to provide M-Pesa Daraja production credentials
-3. Kilo Cloud to complete landing page hero overlay verification (passed on session branch — panel renders correctly at viewport bottom on desktop and mobile)
+3. Kilo Cloud to complete landing page hero verification (passed on session branch — panel renders correctly at viewport bottom on desktop and mobile)
 4. Owner to review and sign off on Phase 2 scope
 5. Update BUSINESS-SIDE-WORKTREE.md timeline section after Phase 2 scoping
