@@ -15,6 +15,33 @@ export default function HomePage() {
           sizes="100vw"
         />
         <div className="absolute inset-0 bg-gradient-to-br from-black/95 via-black/75 to-black/40" />
+        <div className="absolute inset-x-0 bottom-0">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent h-40" />
+          <div className="relative max-w-7xl mx-auto px-6 pb-8 pt-12">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
+              <div className="max-w-xl">
+                <h2 className="text-2xl md:text-4xl font-bold text-white mb-3 drop-shadow">
+                  Ready to Start Your Social Media Business?
+                </h2>
+                <p className="text-white/85 text-base md:text-lg drop-shadow">
+                  Join hundreds of Kenyan entrepreneurs already earning with Janjez Business Side.
+                </p>
+              </div>
+              <Link
+                href="/auth/sign-in"
+                className="shrink-0 inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-full font-bold text-lg shadow-xl shadow-green-900/60 transition transform hover:scale-105"
+              >
+                Get Started — Free
+              </Link>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 mt-6">
+              <Link href="#categories" className="px-4 py-2 rounded-full border border-white/25 bg-black/30 backdrop-blur-sm text-white/90 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">Categories</Link>
+              <Link href="#how-it-works" className="px-4 py-2 rounded-full border border-white/25 bg-black/30 backdrop-blur-sm text-white/90 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">How It Works</Link>
+              <Link href="#categories" className="px-4 py-2 rounded-full border border-white/25 bg-black/30 backdrop-blur-sm text-white/90 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">Product</Link>
+              <a href="https://janjez.social" className="px-4 py-2 rounded-full border border-white/25 bg-black/30 backdrop-blur-sm text-white/90 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">Main Site</a>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="relative z-10">
@@ -152,21 +179,33 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="max-w-7xl mx-auto px-6 py-20">
-          <div className="bg-gradient-to-r from-green-900/60 to-black/60 backdrop-blur-md border border-green-500/30 rounded-2xl p-12 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Ready to Start Your Social Media Business?</h2>
-            <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">Join hundreds of Kenyan entrepreneurs already earning with Janjez Business Side.</p>
-            <Link href="/auth/sign-in" className="inline-block bg-green-600 hover:bg-green-700 text-white px-10 py-4 rounded-lg font-semibold transition shadow-lg shadow-green-900/50">Get Started — Free</Link>
-          </div>
-        </section>
-
         <footer className="border-t border-white/10 mt-20">
           <div className="max-w-7xl mx-auto px-6 py-12">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
               <div><div className="text-white font-bold mb-4">Janjez Business Side</div><p className="text-white/60 text-sm leading-relaxed">Kenya&apos;s infrastructure for social media entrepreneurs.</p></div>
-              <div><div className="text-white font-semibold mb-4">Product</div><ul className="space-y-2 text-sm"><li><Link href="#categories" className="text-white/60 hover:text-white transition">Categories</Link></li><li><Link href="#how-it-works" className="text-white/60 hover:text-white transition">How It Works</Link></li><li><a href="https://janjez.social" className="text-white/60 hover:text-white transition">Main Site</a></li></ul></div>
-              <div><div className="text-white font-semibold mb-4">Categories</div><ul className="space-y-2 text-sm"><li><Link href="/auth/sign-in" className="text-white/60 hover:text-white transition">Reseller</Link></li><li><Link href="/auth/sign-in" className="text-white/60 hover:text-white transition">Child Panel</Link></li><li><Link href="/auth/sign-in" className="text-white/60 hover:text-white transition">Affiliate</Link></li></ul></div>
-              <div><div className="text-white font-semibold mb-4">Account</div><ul className="space-y-2 text-sm"><li><Link href="/auth/sign-in" className="text-white/60 hover:text-white transition">Sign In</Link></li><li><Link href="/dashboard" className="text-white/60 hover:text-white transition">Dashboard</Link></li></ul></div>
+              <div>
+                <div className="text-white font-semibold mb-4">Product</div>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="#categories" className="px-4 py-2 rounded-full border border-white/20 bg-black/40 text-white/80 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">Categories</Link>
+                  <Link href="#how-it-works" className="px-4 py-2 rounded-full border border-white/20 bg-black/40 text-white/80 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">How It Works</Link>
+                  <a href="https://janjez.social" className="px-4 py-2 rounded-full border border-white/20 bg-black/40 text-white/80 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">Main Site</a>
+                </div>
+              </div>
+              <div>
+                <div className="text-white font-semibold mb-4">Categories</div>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/auth/sign-in" className="px-4 py-2 rounded-full border border-white/20 bg-black/40 text-white/80 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">Reseller</Link>
+                  <Link href="/auth/sign-in" className="px-4 py-2 rounded-full border border-white/20 bg-black/40 text-white/80 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">Child Panel</Link>
+                  <Link href="/auth/sign-in" className="px-4 py-2 rounded-full border border-white/20 bg-black/40 text-white/80 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">Affiliate</Link>
+                </div>
+              </div>
+              <div>
+                <div className="text-white font-semibold mb-4">Account</div>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/auth/sign-in" className="px-4 py-2 rounded-full border border-white/20 bg-black/40 text-white/80 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">Sign In</Link>
+                  <Link href="/dashboard" className="px-4 py-2 rounded-full border border-white/20 bg-black/40 text-white/80 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">Dashboard</Link>
+                </div>
+              </div>
             </div>
             <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-white/40 text-sm">© 2026 Janjez Business Side. All rights reserved.</div>
