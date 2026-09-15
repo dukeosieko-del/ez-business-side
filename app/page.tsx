@@ -17,7 +17,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-br from-black/95 via-black/75 to-black/40" />
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-20">
+      <div className="absolute inset-x-0 bottom-0 z-20">
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent h-40" />
         <div className="relative max-w-7xl mx-auto px-6 pb-8 pt-12">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
@@ -39,7 +39,7 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center gap-3 mt-6">
             <Link href="#categories" className="px-4 py-2 rounded-full border border-white/25 bg-black/30 backdrop-blur-sm text-white/90 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">Categories</Link>
             <Link href="#how-it-works" className="px-4 py-2 rounded-full border border-white/25 bg-black/30 backdrop-blur-sm text-white/90 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">How It Works</Link>
-            <Link href="#categories" className="px-4 py-2 rounded-full border border-white/25 bg-black/30 backdrop-blur-sm text-white/90 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">Product</Link>
+            <Link href="#product" className="px-4 py-2 rounded-full border border-white/25 bg-black/30 backdrop-blur-sm text-white/90 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">Product</Link>
             <a href="https://janjez.social" className="px-4 py-2 rounded-full border border-white/25 bg-black/30 backdrop-blur-sm text-white/90 text-sm font-medium hover:border-green-500/60 hover:bg-green-500/10 hover:text-white transition">Main Site</a>
           </div>
         </div>
@@ -84,6 +84,12 @@ export default function HomePage() {
               <Link href="/auth/sign-in" className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg font-semibold text-center transition shadow-lg shadow-green-900/40">Continue with Janjez</Link>
               <a href="#categories" className="border border-white/30 hover:border-white/60 hover:bg-white/5 text-white px-8 py-4 rounded-lg font-semibold text-center transition">Explore Categories</a>
             </div>
+          </div>
+        </section>
+        <section id="product" className="max-w-7xl mx-auto px-6 py-20">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">Our Product</h2>
+            <p className="text-white/70 text-lg max-w-2xl mx-auto">Everything you need to run a social media business in one place — reseller, child panel, and affiliate under one roof.</p>
           </div>
         </section>
         <section id="categories" className="max-w-7xl mx-auto px-6 py-20">
