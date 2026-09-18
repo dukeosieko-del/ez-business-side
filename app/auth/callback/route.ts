@@ -9,6 +9,10 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const error = searchParams.get('error');
+  const janjezUserId = searchParams.get('janjez_user_id');
+  const janjezEmail = searchParams.get('janjez_email');
+  const janjezFullName = searchParams.get('janjez_full_name');
+  const janjezPhone = searchParams.get('janjez_phone');
 
   if (error) {
     return NextResponse.redirect(
@@ -16,8 +20,39 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  if (janjezUserId) {
+    try {
+      const fullName = janjezFullName ?? janjezEmail?.split('@')[0] ?? 'User';
+      const phone = janjezPhone ?? '';
+
+      const syncRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://business.janjez.social'}/api/auth/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          janjez_user_id: janjezUserId,
+          email: janjezEmail ?? '',
+          full_name: fullName,
+          phone,
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+
+      if (!syncRes.ok) {
+        throw new Error('Session sync failed');
+      }
+
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'unknown';
+      console.error('Direct auth sync error:', message);
+      return NextResponse.redirect(
+        new URL(`/auth/error?reason=auth_failed&detail=${encodeURIComponent(message)}`, request.url)
+      );
+    }
+  }
+
   if (!code) {
-    return NextResponse.redirect(new URL('/auth/error?reason=missing_code', request.url));
+    return NextResponse.redirect(new URL('/auth/error?reason=missing_auth', request.url));
   }
 
   try {
