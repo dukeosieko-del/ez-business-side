@@ -160,14 +160,14 @@ Fix for build blocker: `isTSX: true` enables TSX parsing.
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
-| 1 | Re-verify hero section visual on current landing page | Pending — Jest PASS (4/4), Playwright pending install | Jest tests confirm copy and routing |
-| 2 | Resolve brand line in footer vs hero | Inform — present in 4 locations, appears intentional branding | |
-| 3 | Answer owner questions re: Supabase/Vercel dashboard connection | BLOCKED — awaiting owner response | Two questions pending |
-| 4 | Complete Vercel login | BLOCKED — requires browser OAuth (no credentials found) | Code WZBX-LJCG expired, new code generated each attempt |
-| 5 | Address /pay and /orders/all 404 routes | Investigation complete — routes don't exist in app code | May need implementation or external routing |
-| 6 | Push session branch to origin | ✅ DONE (a09766e → origin/kilo/emerald-dolphin-b37) | |
-| 7 | Periodic deployment health polling | No automated mechanism in sandbox | Manual checks available |
-| 8 | Periodic BUILD-RECORD update | No automated mechanism in sandbox | Manual updates available |
+| 1 | Re-verify hero section visual | ✅ PASS — 4/4 (Playwright) | Desktop + mobile, all key strings present |
+| 2 | Brand line in footer vs hero | Inform — intentional branding | "Janjez Business Side" appears in hero pill, footer brand, footer copyright |
+| 3 | Answer owner questions | BLOCKED — awaiting owner | Two questions pending (Supabase/Vercel dashboard + credentials) |
+| 4 | Complete Vercel login | BLOCKED — user to handle | Token not available in sandbox |
+| 5 | Address /pay and /orders/all 404 | ✅ RESOLVED — no UI references | Routes don't exist in app, not linked from UI |
+| 6 | Push session branch to origin | ✅ DONE (d44f13e → origin/kilo/emerald-dolphin-b37) | |
+| 7 | Periodic deployment health polling | No automated mechanism | Manual checks via curl |
+| 8 | Periodic BUILD-RECORD update | No automated mechanism | Manual updates |
 | 9 | Produce final report | Pending | Medium |
 
 ---
