@@ -204,7 +204,7 @@ The `/api/auth/check` endpoint returns 404 because the island Next.js app does n
 | Item | Status |
 |------|--------|
 | Vercel deployment (live) | `dpl_DLADsx2gS9HDfEqkJdm9AZtX4HbR` (pre-merge, unchanged) |
-| Latest main commit | `606e21b` |
+| Latest main commit | `63054aa` |
 ### Live Deployment Status — CONFIRMED STALE
 
 **Live site at `business.janjez.social` is confirmed serving the OLD build.**
@@ -229,12 +229,28 @@ Verification (2026-09-18T21:02 UTC):
 
 | Commit | Fix |
 |--------|-----|
+| `63054aa` | Dashboard build — reseller, affiliate, landing page |
 | `606e21b` | BUILD-RECORD update |
-| `432d188` | Sentry DSN validation — prevents `Invalid Sentry Dsn` error when DSN is placeholder |
-| `5b84d11` | Auth bridge — fixes 404 on `/oauth/authorize`, adds `/api/auth/check` + `/api/auth/sync` |
+| `432d188` | Sentry DSN validation — prevents `Invalid Sentry Dsn` error |
+| `5b84d11` | Auth bridge — fixes 404 on `/oauth/authorize` |
 | `59ac8ef` | BUILD-RECORD update |
 
 ---
+
+## Dashboard Build (2026-09-18)
+
+8 files changed, 1,037 insertions, 96 deletions.
+
+| File | Lines | Description |
+|------|-------|-------------|
+| `app/(dashboard)/dashboard/page.tsx` | 227 | Landing page with stats, categories, quick actions |
+| `app/(dashboard)/dashboard/reseller/page.tsx` | 402 | Partner profile, panels, orders, commissions |
+| `app/(dashboard)/dashboard/affiliate/page.tsx` | 285 | Earnings, stats, history, payouts |
+| `app/(dashboard)/layout.tsx` | 58 | Navigation bar |
+| `app/api/affiliate/stats/route.ts` | Extended | Commissions, clicks, totals |
+| `src/components/affiliate/AffiliateLink.tsx` | Modified | Link + copy button |
+| `src/components/affiliate/AffiliateStats.tsx` | Modified | Earnings cards |
+| `src/components/affiliate/PayoutRequest.tsx` | Modified | Payout form + MPesa |
 
 ## 10. Docs Directory
 
