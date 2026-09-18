@@ -205,20 +205,23 @@ The `/api/auth/check` endpoint returns 404 because the island Next.js app does n
 |------|--------|
 | Vercel deployment (live) | `dpl_DLADsx2gS9HDfEqkJdm9AZtX4HbR` (pre-merge, unchanged) |
 | Latest main commit | `606e21b` |
-### Deploy Blocker
+### Live Deployment Status — CONFIRMED STALE
 
-Vercel deploy requires authentication token. No auth established in sandbox. User must either:
-1. Provide Vercel PAT → `VERCEL_TOKEN=<TOKEN> npx vercel deploy --prod`
-2. Manually trigger deploy from Vercel dashboard (https://vercel.com/dashboard)
-3. Wait for auto-deploy (if configured)
+**Live site at `business.janjez.social` is confirmed serving the OLD build.**
 
-### Sentry DSN Fix Verification
+Verification (2026-09-18T21:02 UTC):
+- `curl business.janjez.social/auth/sign-in` → HTML contains `oauth/authorize` URL ❌
+- Local `src/lib/auth/sso.ts` → contains `/auth/sign-in` ✅
+- Local build output → includes `/api/auth/check`, `/api/auth/sync` ✅
+- **Mismatch confirmed:** Source has fix, live site does not
 
-- ✅ `src/lib/config/env.ts` — DSN validated via `.refine()`, placeholders → undefined
-- ✅ `src/lib/monitoring/sentry.ts` — DSN format checked before `Sentry.init()`, logs warning and returns early if invalid
-- ✅ `.env.example` — comment added requiring `https://` prefix
-- ✅ Build passes with fix
-- ⏳ Fix NOT YET LIVE — old deployment (`dpl_DLADsx2gS9HDfEqkJdm9AZtX4HbR`) still serves previous build without validation
+**This is a Vercel deployment issue, not a code issue.** Vercel has not auto-redeployed from main. The deployment ID remains `dpl_DLADsx2gS9HDfEqkJdm9AZtX4HbR` across all new commits.
+
+**To resolve, user must:**
+1. Go to https://vercel.com/dashboard
+2. Select `ez-business-side` project  
+3. Click "Deploy" or "Redeploy"
+4. OR provide Vercel PAT for CLI deploy: `VERCEL_TOKEN=<token> npx vercel deploy --prod`
 | Local build verified | ✅ 41 routes |
 | Site health | ✅ `/` 200, `/api/health` ok, `/auth/sign-in` 200 |
 
