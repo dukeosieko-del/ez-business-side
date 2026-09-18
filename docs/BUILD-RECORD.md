@@ -160,7 +160,7 @@ Fix for build blocker: `isTSX: true` enables TSX parsing.
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
-| 1 | Re-verify hero section visual | ✅ PASS — 4/4 (Playwright) | Desktop + mobile, all key strings present |
+| 1 | Re-verify hero section visual | PASS | Desktop + mobile, all key strings present |
 | 2 | Brand line in footer vs hero | Inform — intentional branding | "Janjez Business Side" appears in hero pill, footer brand, footer copyright |
 | 3 | Answer owner questions | BLOCKED — awaiting owner | Two questions pending (Supabase/Vercel dashboard + credentials) |
 | 4 | Complete Vercel login | BLOCKED — user to handle | Token not available in sandbox |
@@ -169,10 +169,17 @@ Fix for build blocker: `isTSX: true` enables TSX parsing.
 | 7 | Periodic deployment health polling | No automated mechanism | Manual checks via curl |
 | 8 | Periodic BUILD-RECORD update | No automated mechanism | Manual updates |
 | 9 | Produce final report | Pending | Medium |
+| 10 | Auth bridge | DONE — 197 lines across 6 files | Auth bridge implementation complete |
 
 ---
 
-## 7. Infrastructure Notes
+## 7. Root Cause — 404 Auth Issue
+
+The `/api/auth/check` endpoint returns 404 because the island Next.js app does not implement an auth verification API route. The `app/` directory contains static auth pages (`/auth/sign-in`, `/auth/sign-in`, `/auth/error`, `/auth/callback`) but no `/api/auth/*` route handlers. Authentication state validation on the island side relies on Supabase session checks in client components rather than a dedicated API endpoint. The auth bridge (197 lines across 6 files) addresses this by providing server-side auth validation logic.
+
+---
+
+## 8. Infrastructure Notes
 
 ### Island Supabase
 - Ref: `fjkzrhyxmjtejjarlxxz`
@@ -190,7 +197,7 @@ Fix for build blocker: `isTSX: true` enables TSX parsing.
 
 ---
 
-## 8. Docs Directory
+## 9. Docs Directory
 
 | File | Description |
 |------|-------------|
