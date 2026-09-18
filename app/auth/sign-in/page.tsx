@@ -1,9 +1,36 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getJanjezSsoUrl } from '@/lib/auth/sso';
 
 export default function SignInPage() {
+  const router = useRouter();
+  const [checking, setChecking] = useState(true);
   const ssoUrl = getJanjezSsoUrl('/dashboard');
+
+  useEffect(() => {
+    fetch('/api/auth/check')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated) {
+          router.push('/dashboard');
+        } else {
+          setChecking(false);
+        }
+      })
+      .catch(() => {
+        setChecking(false);
+      });
+  }, [router]);
+
+  if (checking) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-green-900">
+        <div className="text-white text-lg">Loading...</div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-green-900">
