@@ -203,8 +203,9 @@ The `/api/auth/check` endpoint returns 404 because the island Next.js app does n
 
 | Item | Status |
 |------|--------|
-| Vercel deployment (live) | `dpl_DLADsx2gS9HDfEqkJdm9AZtX4HbR` |
-| Latest main commit | `432d188` |
+| Vercel deployment (live) | `dpl_DLADsx2gS9HDfEqkJdm9AZtX4HbR` (pre-merge, unchanged) |
+| Latest main commit | `606e21b` |
+| Vercel auto-deploy | ⏳ NOT triggered — deployment ID unchanged across commits |
 | Local build verified | ✅ 41 routes |
 | Site health | ✅ `/` 200, `/api/health` ok, `/auth/sign-in` 200 |
 
@@ -212,9 +213,10 @@ The `/api/auth/check` endpoint returns 404 because the island Next.js app does n
 
 | Commit | Fix |
 |--------|-----|
+| `606e21b` | BUILD-RECORD update |
 | `432d188` | Sentry DSN validation — prevents `Invalid Sentry Dsn` error when DSN is placeholder |
 | `5b84d11` | Auth bridge — fixes 404 on `/oauth/authorize`, adds `/api/auth/check` + `/api/auth/sync` |
-| `59ac8ef` | BUILD-RECORD update with deployment status |
+| `59ac8ef` | BUILD-RECORD update |
 
 ---
 
