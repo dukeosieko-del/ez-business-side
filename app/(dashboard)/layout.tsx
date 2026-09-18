@@ -1,4 +1,15 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+const navItems = [
+  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/dashboard/reseller', label: 'Reseller' },
+  { href: '/dashboard/affiliate', label: 'Affiliate' },
+  { href: '/dashboard/wallet', label: 'Wallet' },
+  { href: '/dashboard/withdrawals', label: 'Withdrawals' },
+];
 
 export default function DashboardLayout({
   children,
@@ -15,7 +26,33 @@ export default function DashboardLayout({
           </Link>
         </div>
       </header>
+      <nav className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center space-x-1">
+            {navItems.map((item) => (
+              <NavLink key={item.href} href={item.href} label={item.label} />
+            ))}
+          </div>
+        </div>
+      </nav>
       <div className="max-w-7xl mx-auto px-4 py-8">{children}</div>
     </main>
+  );
+}
+
+function NavLink({ href, label }: { href: string; label: string }) {
+  const pathname = usePathname();
+  const isActive = pathname === href || pathname.startsWith(`${href}/`);
+  return (
+    <Link
+      href={href}
+      className={`inline-block px-4 py-3 text-sm font-medium border-b-2 transition ${
+        isActive
+          ? 'border-green-600 text-green-600'
+          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+      }`}
+    >
+      {label}
+    </Link>
   );
 }

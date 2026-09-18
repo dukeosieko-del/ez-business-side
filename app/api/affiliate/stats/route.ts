@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { createHash } from 'crypto';
 
-async function requireAffiliateId(req: NextRequest): Promise<string | null> {
+async function requireAffiliateId(req: NextRequest): Promise<{ id: string; code: string } | null> {
   const token = req.cookies.get('jez_bs_session')?.value;
   if (!token) return null;
 
@@ -19,24 +19,33 @@ async function requireAffiliateId(req: NextRequest): Promise<string | null> {
 
   const { data: affiliate } = await supabase
     .from('affiliates')
-    .select('id')
+    .select('id, affiliate_code')
     .eq('janjez_user_id', session.partner_id)
     .maybeSingle();
 
-  return affiliate?.id ?? null;
+  return affiliate ? { id: affiliate.id, code: affiliate.affiliate_code } : null;
 }
 
 export async function GET(req: NextRequest) {
-  const affiliateId = await requireAffiliateId(req);
-  if (!affiliateId) {
+  const aff = await requireAffiliateId(req);
+  if (!aff) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const supabase = getSupabaseAdmin();
+
   const { data: commissions } = await supabase
     .from('affiliate_commissions')
-    .select('*')
-    .eq('affiliate_id', affiliateId);
+    .select('id, order_id, amount, status, created_at')
+    .eq('affiliate_id', aff.id)
+    .order('created_at', { ascending: false });
+
+  const { data: clicks } = await supabase
+    .from('affiliate_clicks')
+    .select('id, ref_code, ip, user_agent, clicked_at, converted_order_id')
+    .eq('ref_code', aff.code)
+    .order('clicked_at', { ascending: false })
+    .limit(20);
 
   const earned = commissions
     ?.filter((c: { status: string }) => c.status === 'completed')
@@ -44,10 +53,22 @@ export async function GET(req: NextRequest) {
   const pending = commissions
     ?.filter((c: { status: string }) => c.status === 'pending' || c.status === 'hold')
     .reduce((sum: number, c: { amount?: number }) => sum + (c.amount ?? 0), 0) ?? 0;
-  const completed = earned;
+
+  const totalClicks = clicks?.length ?? 0;
+  const totalConversions = commissions
+    ?.filter((c: { status: string }) => c.status === 'completed' || c.status === 'pending')
+    .length ?? 0;
 
   return NextResponse.json({
     success: true,
-    data: { earned, pending, completed },
+    data: {
+      earned,
+      pending,
+      total_clicks: totalClicks,
+      total_conversions: totalConversions,
+      commission_rate: 0.10,
+      commissions: commissions ?? [],
+      recent_clicks: clicks ?? [],
+    },
   });
 }
