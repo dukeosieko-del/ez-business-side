@@ -205,7 +205,20 @@ The `/api/auth/check` endpoint returns 404 because the island Next.js app does n
 |------|--------|
 | Vercel deployment (live) | `dpl_DLADsx2gS9HDfEqkJdm9AZtX4HbR` (pre-merge, unchanged) |
 | Latest main commit | `606e21b` |
-| Vercel auto-deploy | ⏳ NOT triggered — deployment ID unchanged across commits |
+### Deploy Blocker
+
+Vercel deploy requires authentication token. No auth established in sandbox. User must either:
+1. Provide Vercel PAT → `VERCEL_TOKEN=<TOKEN> npx vercel deploy --prod`
+2. Manually trigger deploy from Vercel dashboard (https://vercel.com/dashboard)
+3. Wait for auto-deploy (if configured)
+
+### Sentry DSN Fix Verification
+
+- ✅ `src/lib/config/env.ts` — DSN validated via `.refine()`, placeholders → undefined
+- ✅ `src/lib/monitoring/sentry.ts` — DSN format checked before `Sentry.init()`, logs warning and returns early if invalid
+- ✅ `.env.example` — comment added requiring `https://` prefix
+- ✅ Build passes with fix
+- ⏳ Fix NOT YET LIVE — old deployment (`dpl_DLADsx2gS9HDfEqkJdm9AZtX4HbR`) still serves previous build without validation
 | Local build verified | ✅ 41 routes |
 | Site health | ✅ `/` 200, `/api/health` ok, `/auth/sign-in` 200 |
 
