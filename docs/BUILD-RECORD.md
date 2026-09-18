@@ -169,7 +169,9 @@ Fix for build blocker: `isTSX: true` enables TSX parsing.
 | 7 | Periodic deployment health polling | No automated mechanism | Manual checks via curl |
 | 8 | Periodic BUILD-RECORD update | No automated mechanism | Manual updates |
 | 9 | Produce final report | Pending | Medium |
-| 10 | Auth bridge | DONE — 197 lines across 6 files | Auth bridge implementation complete |
+| 10 | Verify build and deployment | ✅ DONE | Local build verified (41 routes, auth routes included) |
+| 11 | Merge auth bridge into main | ✅ DONE | Auth bridge merged to main |
+| 12 | Vercel redeploy | PENDING | Code on main, build verified, awaiting Vercel auto-deploy |
 
 ---
 
@@ -197,7 +199,15 @@ The `/api/auth/check` endpoint returns 404 because the island Next.js app does n
 
 ---
 
-## 9. Docs Directory
+## 9. Deployment Status
+
+- Current deployment on Vercel: `dpl_DLADsx2gS9HDfEqkJdm9AZtX4HbR` (old, pre-merge)
+- New build on main: `5b84d11` (merged, built, pushed — awaiting Vercel redeploy)
+- Local build verified: ✅ (41 routes, auth routes included)
+
+---
+
+## 10. Docs Directory
 
 | File | Description |
 |------|-------------|
