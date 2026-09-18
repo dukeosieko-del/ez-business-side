@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { getChildSession } from '@/lib/child-users/session';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const sessionCookie = req.cookies.get('jez_child_session')?.value;
-  if (!sessionCookie) {
+  const session = await getChildSession();
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -13,7 +14,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     .from('child_orders')
     .select('status')
     .eq('id', id)
-    .single();
+    .eq('panel_id', session.panel_id)
+    .eq('child_user_id', session.user_id)
+    .maybeSingle();
 
   if (!order) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
