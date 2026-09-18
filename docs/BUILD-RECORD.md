@@ -67,14 +67,40 @@ Dynamic: `/[panel]`, `/[panel]/order/[serviceId]`, `/[panel]/orders`, `/[panel]/
 | Supabase CLI | 2.117.0 |
 | Vercel login | Pending owner authorization |
 
-### Health Checks (as of 2026-09-18T19:13Z)
+### Live Deployment Health (2026-09-18T19:24Z)
 
 | Endpoint | Result |
 |----------|--------|
 | `https://business.janjez.social/` | 200 ✅ |
-| `https://business.janjez.social/api/health` | `{"status":"ok","dependencies":{"database":"healthy","dbLatencyMs":559}}` ✅ |
-| `https://business.janjez.social/pay` | 404 (not on island) |
-| `https://business.janjez.social/orders/all` | 404 (not on island) |
+| `https://business.janjez.social/auth/sign-in` | 200 ✅ |
+| `https://business.janjez.social/dashboard` | 200 ✅ |
+| `https://business.janjez.social/api/health` | `{"status":"ok","dependencies":{"database":"healthy","dbLatencyMs":513}}` ✅ |
+| `https://business.janjez.social/pay` | 404 (not in app code) |
+| `https://business.janjez.social/orders/all` | 404 (not in app code) |
+
+### Jest Hero Regression Tests
+| Test | Result |
+|------|--------|
+| Renders all required copy | ✅ PASS |
+| Primary CTA routes to /auth/sign-in | ✅ PASS |
+| Category cards route correctly, no duplicates | ✅ PASS |
+| Page body not buried under fixed overlay | ✅ PASS |
+
+**Note:** `npm run test:hero` script references `tests/hero-bottom-panel.spec.ts` but file is `.js` — run via `npx jest tests/hero-bottom-panel.spec.js` instead.
+
+### /pay and /orders/all 404 Diagnosis
+- Neither route exists in app code (`app/` directory), next.config, or any proxy/rewrite config
+- No nginx or external proxy configuration found
+- These may be intended as Janjez main routes (external to island app) or need implementation
+
+### Brand Line Analysis (main's landing page)
+"Janjez Business Side" appears in 4 locations:
+1. **Hero pill badge** (line 88) — green pulse indicator
+2. **Hero headline** (line 94) — "Build Your Social Media Business on Kenya&apos;s #1 SMM Infrastructure"
+3. **Footer brand block** (lines 295-297) — "Janjez Business Side" + "Kenya&apos;s infrastructure for social media entrepreneurs."
+4. **Footer copyright** (line 359)
+
+The string "Kenya's infrastructure for social media entrepreneurs." originally intended for hero bottom panel now appears only in footer brand block — no longer in hero position.
 
 ### 502 Error Diagnosis (from prior investigation)
 - `/pay` and `/orders/all` are NOT routes on the island Next.js app
@@ -132,16 +158,16 @@ Fix for build blocker: `isTSX: true` enables TSX parsing.
 
 ## 6. Outstanding Items
 
-| # | Item | Status | Priority |
-|---|------|--------|----------|
-| 1 | Re-verify hero panel visual on current (main's) landing page | Pending — Playwright not installed, server not running locally | Medium |
-| 2 | Resolve brand line in footer vs hero section discrepancy | Pending | Medium |
-| 3 | Answer owner questions re: Supabase/Vercel dashboard connection | Blocked — awaiting owner response | High |
-| 4 | Complete Vercel login (code WZBX-LJCG) for API access | Blocked — awaiting owner authorization | High |
-| 5 | Address `/pay` and `/orders/all` 404 routes | Pending | Medium |
-| 6 | Push session branch to origin | ✅ DONE (03e175c..2aeb72c → origin/kilo/emerald-dolphin-b37) | Done |
-| 7 | Periodic deployment health polling (15 min interval) | Not yet started — no automated polling in sandbox | Active |
-| 8 | Periodic BUILD-RECORD update (30 min interval) | Not yet started — no automated polling in sandbox | Active |
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | Re-verify hero section visual on current landing page | Pending — Jest PASS (4/4), Playwright pending install | Jest tests confirm copy and routing |
+| 2 | Resolve brand line in footer vs hero | Inform — present in 4 locations, appears intentional branding | |
+| 3 | Answer owner questions re: Supabase/Vercel dashboard connection | BLOCKED — awaiting owner response | Two questions pending |
+| 4 | Complete Vercel login | BLOCKED — requires browser OAuth (no credentials found) | Code WZBX-LJCG expired, new code generated each attempt |
+| 5 | Address /pay and /orders/all 404 routes | Investigation complete — routes don't exist in app code | May need implementation or external routing |
+| 6 | Push session branch to origin | ✅ DONE (a09766e → origin/kilo/emerald-dolphin-b37) | |
+| 7 | Periodic deployment health polling | No automated mechanism in sandbox | Manual checks available |
+| 8 | Periodic BUILD-RECORD update | No automated mechanism in sandbox | Manual updates available |
 | 9 | Produce final report | Pending | Medium |
 
 ---
