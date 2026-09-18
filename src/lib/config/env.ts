@@ -18,7 +18,7 @@ const envSchema = z.object({
 
   NEXT_PUBLIC_SITE_URL: z.string().url(),
 
-  SENTRY_DSN: z.string().optional(),
+  SENTRY_DSN: z.string().optional().refine((v) => !v || v === '<or leave empty>' || v.startsWith('https://') || v.startsWith('http://'), { message: 'Invalid Sentry DSN' }).transform((v) => (!v || v === '<or leave empty>' ? undefined : v)),
   BETTER_STACK_TOKEN: z.string().optional(),
 
   PARTNER_ACTIVATION_FEE: z.string().default('1499'),
