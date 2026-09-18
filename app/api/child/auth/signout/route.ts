@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { signoutChildSession } from '@/lib/child-users/session';
+import { destroyChildSession } from '@/lib/child-users/session';
 
 export async function POST(req: NextRequest) {
-  await signoutChildSession();
+  await destroyChildSession();
   return NextResponse.json({ success: true });
 }

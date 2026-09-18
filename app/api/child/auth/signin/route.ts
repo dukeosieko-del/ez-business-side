@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
-  await createChildSession({ panel_id, user_id: user.id, email: user.email });
+  await createChildSession({ panel_id, user_id: user.id, email: user.email, created_at: new Date().toISOString() });
 
   return NextResponse.json({ success: true, data: { user } });
 }
