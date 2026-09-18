@@ -134,14 +134,14 @@ Fix for build blocker: `isTSX: true` enables TSX parsing.
 
 | # | Item | Status | Priority |
 |---|------|--------|----------|
-| 1 | Re-verify hero panel visual on current (main's) landing page | Pending | High |
-| 2 | Resolve brand line in footer vs hero overlay discrepancy | Pending | Medium |
-| 3 | Answer owner questions re: Supabase/Vercel dashboard connection | Pending | Medium |
-| 4 | Complete Vercel login (code WZBX-LJCG) for API access | Pending | Medium |
+| 1 | Re-verify hero panel visual on current (main's) landing page | Pending — Playwright not installed, server not running locally | Medium |
+| 2 | Resolve brand line in footer vs hero section discrepancy | Pending | Medium |
+| 3 | Answer owner questions re: Supabase/Vercel dashboard connection | Blocked — awaiting owner response | High |
+| 4 | Complete Vercel login (code WZBX-LJCG) for API access | Blocked — awaiting owner authorization | High |
 | 5 | Address `/pay` and `/orders/all` 404 routes | Pending | Medium |
-| 6 | Push session branch to origin | Pending | Medium |
-| 7 | Periodic deployment health polling (15 min interval) | Active | Medium |
-| 8 | Periodic BUILD-RECORD update (30 min interval) | Active | Medium |
+| 6 | Push session branch to origin | ✅ DONE (03e175c..2aeb72c → origin/kilo/emerald-dolphin-b37) | Done |
+| 7 | Periodic deployment health polling (15 min interval) | Not yet started — no automated polling in sandbox | Active |
+| 8 | Periodic BUILD-RECORD update (30 min interval) | Not yet started — no automated polling in sandbox | Active |
 | 9 | Produce final report | Pending | Medium |
 
 ---
