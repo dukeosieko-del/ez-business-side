@@ -1,26 +1,32 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { createHash } from 'crypto';
 
-export async function GET() {
+async function getPartnerFromCookie(cookie?: string): Promise<{ id: string } | null> {
+  if (!cookie) return null;
+  const tokenHash = createHash('sha256').update(cookie).digest('hex');
+
+  const supabase = getSupabaseAdmin();
+  const { data: session } = await supabase
+    .from('sessions')
+    .select('partner_id')
+    .eq('token_hash', tokenHash)
+    .gt('expires_at', new Date().toISOString())
+    .maybeSingle();
+
+  return session ? { id: session.partner_id } : null;
+}
+
+export async function GET(req: Request) {
   try {
-    const supabase = getSupabaseAdmin();
-    const { data: sessionData } = await supabase.auth.getSession();
+    const cookie = req.headers.get('cookie')?.match(/jez_bs_session=([^;]+)/)?.[1];
+    const partner = await getPartnerFromCookie(cookie);
 
-    if (!sessionData.session) {
+    if (!partner) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = sessionData.session.user.id;
-    const { data: partner } = await supabase
-      .from('partners')
-      .select('id')
-      .eq('janjez_user_id', userId)
-      .single();
-
-    if (!partner) {
-      return NextResponse.json({ success: true, data: [] });
-    }
-
+    const supabase = getSupabaseAdmin();
     const { data: panels } = await supabase
       .from('child_panels')
       .select('id, partner_id, subdomain, custom_domain, status, created_at')

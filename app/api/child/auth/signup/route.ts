@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  await createChildSession({ panel_id, user_id: user.id, email });
+  await createChildSession({ panel_id, user_id: user.id, email, created_at: new Date().toISOString() });
 
   return NextResponse.json({ success: true, data: { user } });
 }

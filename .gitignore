@@ -46,3 +46,13 @@ next-env.d.ts
 
 # sentry
 .sentry/
+
+# secrets
+.supabase-keys.json
+
+# supabase CLI cache
+supabase/.temp/
+
+# test artifacts
+test-results/
+tests/__screenshots__/

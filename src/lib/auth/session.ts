@@ -17,6 +17,13 @@ export async function createSession(payload: SessionPayload) {
   const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000);
 
   const supabase = getSupabaseAdmin();
+
+  await supabase.from('sessions').insert({
+    partner_id: payload.partner_id,
+    token_hash: tokenHash,
+    expires_at: expiresAt.toISOString(),
+  });
+
   await supabase.from('audit_log').insert({
     actor_type: 'partner',
     actor_id: payload.partner_id,
@@ -42,10 +49,34 @@ export async function getSession(): Promise<SessionPayload | null> {
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
-  return null;
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+
+  const supabase = getSupabaseAdmin();
+  const { data: session } = await supabase
+    .from('sessions')
+    .select('partner_id, created_at')
+    .eq('token_hash', tokenHash)
+    .gt('expires_at', new Date().toISOString())
+    .maybeSingle();
+
+  if (!session) return null;
+
+  return {
+    partner_id: session.partner_id,
+    janjez_user_id: '',
+    created_at: session.created_at,
+  };
 }
 
 export async function destroySession() {
   const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+
+  if (token) {
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const supabase = getSupabaseAdmin();
+    await supabase.from('sessions').delete().eq('token_hash', tokenHash);
+  }
+
   cookieStore.delete(SESSION_COOKIE);
 }

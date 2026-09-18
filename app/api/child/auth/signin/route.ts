@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { verifyPassword } from '@/lib/child-users/password';
-import { createChildSession } from '@/lib/child-users/session';
+import { createChildSession, getChildSession } from '@/lib/child-users/session';
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -23,12 +22,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
+  const { verifyPassword } = await import('@/lib/child-users/password');
   const valid = await verifyPassword(password, user.password_hash);
   if (!valid) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
-  await createChildSession({ panel_id, user_id: user.id, email: user.email });
+  await createChildSession({ panel_id, user_id: user.id, email: user.email, created_at: new Date().toISOString() });
 
   return NextResponse.json({ success: true, data: { user } });
+}
+
+export async function GET(req: NextRequest) {
+  const session = await getChildSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  return NextResponse.json({ success: true, data: session });
 }

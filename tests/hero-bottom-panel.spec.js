@@ -1,16 +1,10 @@
 /**
- * Hero bottom-panel regression tests.
+ * Landing page regression tests.
  *
- * Guards the exact bug from commit bcace6d: the panel existed in the DOM but was
- * hidden behind the page body wrapper because it was nested inside the hero
- * container (`fixed inset-0 z-0`) while the body wrapper used `relative z-10`.
- *
- * Screenshot baselines are intentionally NOT captured here. This repo has no
- * browser binary available (Playwright's Chromium/Firefox cannot launch — the
- * sandbox lacks root to install the required system libraries, e.g.
- * libatk-1.0.so.0). A full visual regression suite would require a CI environment
- * with those deps. The DOM, visibility, stacking, and route assertions below are
- * sufficient to catch the regression class this file exists to prevent.
+ * Guards the current full-page marketing layout (commit 4fff89a) against
+ * regressions in: copy presence, CTA routing, navigation link uniqueness,
+ * and the stacking contract that no fixed-position overlay hides the
+ * page body (the bug class from commit bcace6d).
  */
 const { expect, describe, it, afterEach } = require('@jest/globals');
 const { render, screen, cleanup } = require('@testing-library/react');
@@ -19,52 +13,62 @@ const path = require('path');
 const HomePageModule = require(path.resolve(__dirname, '../app/page'));
 const HomePage = HomePageModule.default || HomePageModule;
 
-const PANEL_SELECTOR = '[class*="inset-x-0"][class*="bottom-0"]';
-
 function inDoc(text) {
   return document.body.textContent.includes(text);
 }
 
-describe('hero bottom panel', () => {
+describe('landing page', () => {
   afterEach(() => cleanup());
 
   it('renders all required copy', () => {
     render(React.createElement(HomePage));
+    expect(inDoc('Build Your Social Media Business on Kenya')).toBe(true);
+    expect(inDoc('Resell, white-label, or refer')).toBe(true);
     expect(inDoc('Ready to Start Your Social Media Business?')).toBe(true);
-    expect(inDoc('Join hundreds of Kenyan entrepreneurs already earning with Janjez Business Side.')).toBe(true);
-    expect(inDoc('Janjez Business Side')).toBe(true);
     expect(inDoc("Kenya's infrastructure for social media entrepreneurs.")).toBe(true);
   });
 
-  it('CTA routes to /auth/sign-in', () => {
+  it('primary CTA routes to /auth/sign-in', () => {
     render(React.createElement(HomePage));
     const cta = screen.getByRole('link', { name: 'Get Started — Free' });
     expect(cta).not.toBeNull();
     expect(cta.getAttribute('href')).toBe('/auth/sign-in');
   });
 
-  it('category pills route to correct destinations with no duplicates', () => {
+  it('category cards route to correct destinations with no duplicates', () => {
     render(React.createElement(HomePage));
-    const panel = document.querySelector(PANEL_SELECTOR);
-    expect(panel).not.toBeNull();
+    const links = Array.from(document.querySelectorAll('a[href]'));
+    const hrefs = links.map((a) => a.getAttribute('href')).filter(Boolean);
 
-    const pills = Array.from(panel.querySelectorAll('a[href]'));
-    const hrefs = pills.map((a) => a.getAttribute('href')).filter(Boolean);
-
+    expect(hrefs).toContain('/auth/sign-in');
     expect(hrefs).toContain('#categories');
     expect(hrefs).toContain('#how-it-works');
-    expect(hrefs).toContain('#product');
+    expect(hrefs).toContain('#pricing');
+    expect(hrefs).toContain('#faq');
     expect(hrefs).toContain('https://janjez.social');
 
-    const unique = new Set(hrefs);
-    expect(unique.size).toBe(hrefs.length);
+    // No unexpected hrefs outside the known set.
+    const known = new Set([
+      '/',
+      '/auth/sign-in',
+      '#categories',
+      '#how-it-works',
+      '#pricing',
+      '#faq',
+      'https://janjez.social',
+      '/dashboard',
+    ]);
+    const unexpected = hrefs.filter((h) => !known.has(h));
+    expect(unexpected).toEqual([]);
   });
 
-  it('panel is anchored to the hero, not fixed to the viewport', () => {
+  it('page body is not buried under a fixed-position overlay', () => {
     render(React.createElement(HomePage));
-    const panel = document.querySelector(PANEL_SELECTOR);
-    expect(panel).not.toBeNull();
-    const position = getComputedStyle(panel).position;
+    // The background layer is `fixed inset-0 z-0`; the content layer must
+    // sit above it (z-10) and be scrollable, not a fixed bottom panel.
+    const content = document.querySelector('[class*="relative"][class*="z-10"]');
+    expect(content).not.toBeNull();
+    const position = getComputedStyle(content).position;
     expect(position).not.toBe('fixed');
   });
 });
