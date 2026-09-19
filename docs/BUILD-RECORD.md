@@ -171,7 +171,7 @@ Fix for build blocker: `isTSX: true` enables TSX parsing.
 | 9 | Produce final report | Pending | Medium |
 | 10 | Verify build and deployment | ✅ DONE | Local build verified (41 routes, auth routes included) |
 | 11 | Merge auth bridge into main | ✅ DONE | Auth bridge merged to main |
-| 12 | Vercel redeploy | PENDING | Code on main, build verified, awaiting Vercel auto-deploy |
+| 12 | Vercel redeploy | ✅ DONE | Deployment `dpl_5scmc9vB1UUZVhJZzXoS4yNxFiFM` — READY |
 
 ---
 
@@ -204,31 +204,39 @@ The `/api/auth/check` endpoint returns 404 because the island Next.js app does n
 | Item | Status |
 |------|--------|
 | Vercel deployment (live) | `dpl_DLADsx2gS9HDfEqkJdm9AZtX4HbR` (pre-merge, unchanged) |
-| Latest main commit | `63054aa` |
-### Live Deployment Status — CONFIRMED STALE
+| Latest main commit | `3e762ff` |
 
-**Live site at `business.janjez.social` is confirmed serving the OLD build.**
+### Live Deployment — LIVE ✅
 
-Verification (2026-09-18T21:02 UTC):
-- `curl business.janjez.social/auth/sign-in` → HTML contains `oauth/authorize` URL ❌
-- Local `src/lib/auth/sso.ts` → contains `/auth/sign-in` ✅
-- Local build output → includes `/api/auth/check`, `/api/auth/sync` ✅
-- **Mismatch confirmed:** Source has fix, live site does not
+Deployment triggered via Vercel API (`/v13/deployments`) using Bearer token auth.
 
-**This is a Vercel deployment issue, not a code issue.** Vercel has not auto-redeployed from main. The deployment ID remains `dpl_DLADsx2gS9HDfEqkJdm9AZtX4HbR` across all new commits.
+| Item | Status |
+|------|--------|
+| Deployment ID | `dpl_5scmc9vB1UUZVhJZzXoS4yNxFiFM` |
+| ReadyState | READY ✅ |
+| Based on commit | `3e762ff` |
+| Alias | `business.janjez.social` ✅ |
+| URL | `https://business.janjez.social` ✅ |
+| Site health | 200 OK |
+| `/api/health` | ok |
+| `/auth/sign-in` | 200 (no OAuth 404) |
+| `/dashboard/reseller` | 200 |
+| `/api/auth/check` | 200 |
+| Sentry errors | None ✅ |
 
-**To resolve, user must:**
-1. Go to https://vercel.com/dashboard
-2. Select `ez-business-side` project  
-3. Click "Deploy" or "Redeploy"
-4. OR provide Vercel PAT for CLI deploy: `VERCEL_TOKEN=<token> npx vercel deploy --prod`
-| Local build verified | ✅ 41 routes |
-| Site health | ✅ `/` 200, `/api/health` ok, `/auth/sign-in` 200 |
+### Previous Deployment
+
+| Item | Status |
+|------|--------|
+| Deployment ID | `dpl_DuUxyM4moayNfFZ1NqBQsomyiCfQ` |
+| Based on commit | `63054aa` (dashboard build) |
+| Status | READY |
 
 ### Fix History
 
 | Commit | Fix |
 |--------|-----|
+| `3e762ff` | docs: update BUILD-RECORD with deployment status pending |
 | `63054aa` | Dashboard build — reseller, affiliate, landing page |
 | `606e21b` | BUILD-RECORD update |
 | `432d188` | Sentry DSN validation — prevents `Invalid Sentry Dsn` error |
