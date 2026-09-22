@@ -5,8 +5,8 @@
 --
 -- Gap: validateActivationReadiness had no reseller branch, so resellers could
 -- activate without completing the wholesale agreement or panel branding steps
- promised on the landing page (app/page.tsx:137-148). These two columns give
- the onboarding checklist its data backing.
+-- advertised on the landing page (app/page.tsx:137-148). These two columns
+-- give the onboarding checklist its data backing.
 --
 -- Both nullable so legacy non-reseller partners are unaffected.
 
