@@ -147,9 +147,11 @@ export default function ResellerPage() {
   }, []);
 
   useEffect(() => {
-    loadPartner();
-    loadWallet();
-    loadPanels();
+    void (async () => {
+      await loadPartner();
+      await loadWallet();
+      await loadPanels();
+    })();
   }, [loadPartner, loadWallet, loadPanels]);
 
   const totalOrders = panels.reduce((sum, p) => sum + p.orders.length, 0);
