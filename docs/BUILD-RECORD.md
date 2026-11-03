@@ -430,3 +430,17 @@ Implementation phase frozen pending probation/verification. No further feature w
 | `docs/BUILD-RECORD.md` | **This file** |
 
 On **main**: `docs/BUSINESS-SIDE-WORKTREE.md` and `docs/RECON-BUSINESS-SIDE-20260915.md` also present.
+
+
+## 22. Live API / infrastructure audit — 2026-11-03
+
+- Audited source branch `feature/a4a-schema-foundation` at `d907eca576fe9d6bcc6b9700a5efd5a71d334bef`; Vercel production deployment `dpl_D2662FFfq7VcM2dFJQzRYZ9Ew3LZ` was READY.
+- Source inventory: 41 `app/api/**/route.ts` handlers. The deployed artifact inventory previously counted 43 handlers (deployment output includes additional route artifacts).
+- Dedicated Supabase project `fjkzrhyxmjtejjarlxxz` is the only database in scope. Read-only schema inspection covered `sessions`, `partners`, `child_panels`, `affiliates`, `wallet_transactions`, and `withdrawal_requests`.
+- Confirmed source defects: admin auth compared the opaque cookie to partner UUID; withdrawal code targeted a nonexistent `withdrawals` table and mismatched columns/status; affiliate stats compared session partner UUID with Janjez user UUID; wallet top-up credited without a verified payment callback; wallet UI swallowed fetch failures; Brevo transport falsely returned success when unconfigured or when the provider returned non-2xx.
+- Repair branch: `fix/business-side-api-auth-withdrawals`. Code changes and preview verification are tracked separately from production.
+- Production Brevo variables `BREVO_API_KEY` and `BREVO_SENDER_EMAIL` are not configured. No email was sent.
+- Production dependency audit previously reported 40 findings (3 low, 35 moderate, 1 high, 1 critical). A fresh lockfile audit and dependency remediation remain required.
+- Vercel runtime error aggregation returned no clusters for the selected seven-day window. Authenticated browser end-to-end tests remain pending.
+- No Supabase migration or RLS policy was applied. No wallet balance, withdrawal, payment, customer record, or bulk email operation was executed.
+- The frozen Janjez main application and database were not accessed.

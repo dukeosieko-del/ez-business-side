@@ -1,74 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { createHash } from 'crypto';
+import { getAuthenticatedPartner } from '@/lib/partner/auth';
 
-async function requireAffiliateId(req: NextRequest): Promise<{ id: string; code: string } | null> {
-  const token = req.cookies.get('jez_bs_session')?.value;
-  if (!token) return null;
-
-  const tokenHash = createHash('sha256').update(token).digest('hex');
+export async function GET(request: NextRequest) {
+  const partnerId = await getAuthenticatedPartner(request);
+  if (!partnerId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const supabase = getSupabaseAdmin();
-  const { data: session } = await supabase
-    .from('sessions')
-    .select('partner_id')
-    .eq('token_hash', tokenHash)
-    .gt('expires_at', new Date().toISOString())
-    .maybeSingle();
+  const { data: partner, error: partnerError } = await supabase.from('partners')
+    .select('janjez_user_id').eq('id', partnerId).maybeSingle();
+  if (partnerError) return NextResponse.json({ error: 'Could not load partner profile' }, { status: 500 });
+  if (!partner) return NextResponse.json({ error: 'Partner not found' }, { status: 404 });
+  const { data: affiliate, error: affiliateError } = await supabase.from('affiliates')
+    .select('id, affiliate_code, commission_rate').eq('janjez_user_id', partner.janjez_user_id).maybeSingle();
+  if (affiliateError) return NextResponse.json({ error: 'Could not load affiliate profile' }, { status: 500 });
+  if (!affiliate) return NextResponse.json({ error: 'Affiliate not found' }, { status: 404 });
 
-  if (!session) return null;
-
-  const { data: affiliate } = await supabase
-    .from('affiliates')
-    .select('id, affiliate_code')
-    .eq('janjez_user_id', session.partner_id)
-    .maybeSingle();
-
-  return affiliate ? { id: affiliate.id, code: affiliate.affiliate_code } : null;
-}
-
-export async function GET(req: NextRequest) {
-  const aff = await requireAffiliateId(req);
-  if (!aff) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const [{ data: commissions, error: commissionsError }, { data: clicks, error: clicksError }, { count: totalClicks, error: countError }] = await Promise.all([
+    supabase.from('affiliate_commissions').select('id, order_id, amount, status, created_at')
+      .eq('affiliate_id', affiliate.id).order('created_at', { ascending: false }),
+    supabase.from('affiliate_clicks').select('id, ref_code, ip, user_agent, clicked_at, converted_order_id')
+      .eq('ref_code', affiliate.affiliate_code).order('clicked_at', { ascending: false }).limit(20),
+    supabase.from('affiliate_clicks').select('id', { count: 'exact', head: true }).eq('ref_code', affiliate.affiliate_code),
+  ]);
+  if (commissionsError || clicksError || countError) {
+    return NextResponse.json({ error: 'Could not load affiliate statistics' }, { status: 500 });
   }
-
-  const supabase = getSupabaseAdmin();
-
-  const { data: commissions } = await supabase
-    .from('affiliate_commissions')
-    .select('id, order_id, amount, status, created_at')
-    .eq('affiliate_id', aff.id)
-    .order('created_at', { ascending: false });
-
-  const { data: clicks } = await supabase
-    .from('affiliate_clicks')
-    .select('id, ref_code, ip, user_agent, clicked_at, converted_order_id')
-    .eq('ref_code', aff.code)
-    .order('clicked_at', { ascending: false })
-    .limit(20);
-
-  const earned = commissions
-    ?.filter((c: { status: string }) => c.status === 'completed')
-    .reduce((sum: number, c: { amount?: number }) => sum + (c.amount ?? 0), 0) ?? 0;
-  const pending = commissions
-    ?.filter((c: { status: string }) => c.status === 'pending' || c.status === 'hold')
-    .reduce((sum: number, c: { amount?: number }) => sum + (c.amount ?? 0), 0) ?? 0;
-
-  const totalClicks = clicks?.length ?? 0;
-  const totalConversions = commissions
-    ?.filter((c: { status: string }) => c.status === 'completed' || c.status === 'pending')
-    .length ?? 0;
-
-  return NextResponse.json({
-    success: true,
-    data: {
-      earned,
-      pending,
-      total_clicks: totalClicks,
-      total_conversions: totalConversions,
-      commission_rate: 0.10,
-      commissions: commissions ?? [],
-      recent_clicks: clicks ?? [],
-    },
-  });
+  const earned = (commissions ?? []).filter((item) => item.status === 'completed')
+    .reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
+  const pending = (commissions ?? []).filter((item) => item.status === 'pending' || item.status === 'hold')
+    .reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
+  const totalConversions = (commissions ?? []).filter((item) => item.status === 'completed' || item.status === 'pending').length;
+  return NextResponse.json({ success: true, data: {
+    earned, pending, total_clicks: totalClicks ?? 0, total_conversions: totalConversions,
+    commission_rate: Number(affiliate.commission_rate ?? 0.1), commissions: commissions ?? [], recent_clicks: clicks ?? [],
+  }});
 }
