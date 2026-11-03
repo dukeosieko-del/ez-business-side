@@ -9,7 +9,9 @@ const envSchema = z.object({
 
   JANJEZ_MAIN_API_URL: z.string().url(),
   JANJEZ_MAIN_API_KEY: z.string().min(1),
-  JANJEZ_MAIN_API_SECRET: z.string().min(1),
+  // The standalone Business Side must boot without credentials for the
+  // optional, frozen-main API adapter. The adapter validates this on use.
+  JANJEZ_MAIN_API_SECRET: z.string().min(1).optional(),
 
   MPESA_ENV: z.enum(['sandbox', 'production']),
   MPESA_CONSUMER_KEY: z.string().optional(),
@@ -39,7 +41,7 @@ const envSchema = z.object({
 
 const isProductionBuild = process.env.NEXT_PHASE === 'phase-production-build';
 
-// Keep module imports build-safe; request-time code still validates the full runtime environment.
+// Keep module imports build-safe; request-time code validates runtime values.
 export const env = (isProductionBuild
   ? envSchema.partial().parse(process.env)
   : envSchema.parse(process.env)) as z.infer<typeof envSchema>;
