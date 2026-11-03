@@ -430,3 +430,47 @@ Implementation phase frozen pending probation/verification. No further feature w
 | `docs/BUILD-RECORD.md` | **This file** |
 
 On **main**: `docs/BUSINESS-SIDE-WORKTREE.md` and `docs/RECON-BUSINESS-SIDE-20260915.md` also present.
+
+
+## 22. Live API / infrastructure audit — 2026-11-03
+
+- Audited source branch `feature/a4a-schema-foundation` at `d907eca576fe9d6bcc6b9700a5efd5a71d334bef`; Vercel production deployment `dpl_D2662FFfq7VcM2dFJQzRYZ9Ew3LZ` was READY.
+- Source inventory: 41 `app/api/**/route.ts` handlers. The deployed artifact inventory previously counted 43 handlers (deployment output includes additional route artifacts).
+- Dedicated Supabase project `fjkzrhyxmjtejjarlxxz` is the only database in scope. Read-only schema inspection covered `sessions`, `partners`, `child_panels`, `affiliates`, `wallet_transactions`, and `withdrawal_requests`.
+- Confirmed source defects: admin auth compared the opaque cookie to partner UUID; withdrawal code targeted a nonexistent `withdrawals` table and mismatched columns/status; affiliate stats compared session partner UUID with Janjez user UUID; wallet top-up credited without a verified payment callback; wallet UI swallowed fetch failures; Brevo transport falsely returned success when unconfigured or when the provider returned non-2xx.
+- Repair branch: `fix/business-side-api-auth-withdrawals`. Code changes and preview verification are tracked separately from production.
+- Production Brevo variables `BREVO_API_KEY` and `BREVO_SENDER_EMAIL` are not configured. No email was sent.
+- Production dependency audit previously reported 40 findings (3 low, 35 moderate, 1 high, 1 critical). A fresh lockfile audit and dependency remediation remain required.
+- Vercel runtime error aggregation returned no clusters for the selected seven-day window. Authenticated browser end-to-end tests remain pending.
+- No Supabase migration or RLS policy was applied. No wallet balance, withdrawal, payment, customer record, or bulk email operation was executed.
+- The frozen Janjez main application and database were not accessed.
+
+## 23. Repair branch verification — 2026-11-03
+
+- Repair branch: `fix/business-side-api-auth-withdrawals`
+- Latest repair commit at time of this update: `2cfe84a1c99a12fbb01c3674e82e7f9e09445ed0`
+- Vercel preview deployment: `dpl_3zJ8MQ9aKyDYm7zRsVg3SYqFZYLC` — **READY**
+- Preview URL: `https://ez-business-side-s2uib863i-dukeosieko-dels-projects.vercel.app`
+- Build: Next.js 16.3.5 compiled successfully; TypeScript completed; all 47 static pages generated.
+- npm install audit: 40 vulnerabilities remain (3 low, 35 moderate, 1 high, 1 critical). No `npm audit fix --force` was run.
+- Preview checks: `/`, `/auth/sign-in`, `/dashboard/wallet`, `/dashboard/withdrawals`, `/admin/withdrawals` returned HTTP 200; `/api/health` returned HTTP 200 with database healthy (244 ms). GET to POST-only wallet/withdrawal endpoints returned 405 as expected.
+- The first preview attempt exposed missing preview-scoped `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SITE_URL` plus optional Main API signing secret. Public URL variables were mirrored from production into Preview; the Main API signing secret is now optional at app boot and the integration throws an explicit configuration error if invoked without it. No secret values were copied into source or chat.
+- Latest preview runtime log check: no error/fatal logs in the selected 30-minute window.
+- Authenticated API/browser tests remain unverified: Vercel's preview share-link fetch returned a deployment-authentication error for API requests. Do not treat unauthenticated page 200s as authenticated workflow proof.
+- Production domain was not promoted to this repair commit. Existing production deployment remains unchanged pending authenticated end-to-end verification and review.
+- Wallet top-ups return 503 until verified payment settlement is implemented. Automated withdrawal approval/payout returns 503; partner withdrawal requests write only a pending row to `withdrawal_requests`. No wallet debit or payout was executed.
+- Brevo production sender/API key remain unconfigured; transactional email will now fail explicitly rather than silently pretending delivery succeeded.
+- No Supabase migrations or RLS changes were applied.
+
+## 24. Final preview verification — 2026-11-03
+
+- Latest repair code commit: `e78a850f0079531cf9462378810e8a42123f7cad`.
+- Latest Vercel preview deployment: `dpl_22URetVzFqk77iQBA7G4bZhmgqso` — **READY**.
+- Preview build completed: Next.js 16.3.5 compile successful; TypeScript successful; 47 static pages generated.
+- Preview HTTP checks: `/`, `/auth/sign-in`, `/dashboard/wallet`, `/dashboard/withdrawals`, `/admin/withdrawals` → 200; `/api/health` → 200 with database healthy (139 ms); GET on POST-only `/api/partner/withdrawal/request` and `/api/partner/wallet/topup` → 405 as expected.
+- Preview runtime error logs: no error/fatal records in the selected 30-minute window.
+- API endpoints requiring a session could not be directly exercised through the preview share-link fetch because Vercel deployment authentication blocked those API fetches. Authenticated user journeys remain unverified.
+- PR: [#3 — Business Side auth, wallet and withdrawal repairs](https://github.com/dukeosieko-del/ez-business-side/pull/3), draft, base `feature/a4a-schema-foundation`.
+- No production deployment or promotion was performed. Production `business.janjez.social/api/health` remains HTTP 200 and database healthy (383 ms at last check).
+- M-Pesa B2C approval/payout helpers now explicitly fail closed; no fake "processed" payout records are created.
+- Wallet top-ups remain disabled (503) until verified payment settlement exists.

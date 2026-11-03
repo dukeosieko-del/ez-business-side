@@ -15,18 +15,16 @@ async function signRequest(
   timestamp: string,
   nonce: string
 ): Promise<string> {
-  const bodyHash = createHmac('sha256', env.JANJEZ_MAIN_API_SECRET)
-    .update(body)
-    .digest('hex');
+  const secret = env.JANJEZ_MAIN_API_SECRET;
+  if (!secret) {
+    throw new Error('Janjez Main API integration is not configured in this environment');
+  }
+  const bodyHash = createHmac('sha256', secret).update(body).digest('hex');
   const payload = `${method}\n${path}\n${bodyHash}\n${timestamp}\n${nonce}`;
-  return createHmac('sha256', env.JANJEZ_MAIN_API_SECRET)
-    .update(payload)
-    .digest('hex');
+  return createHmac('sha256', secret).update(payload).digest('hex');
 }
 
-export async function callJanjez<T>(
-  options: JanjezRequestOptions
-): Promise<T> {
+export async function callJanjez<T>(options: JanjezRequestOptions): Promise<T> {
   const { method, path, body = {}, idempotencyKey } = options;
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const nonce = randomUUID();
@@ -48,11 +46,9 @@ export async function callJanjez<T>(
   });
 
   const json = await response.json();
-
-  if (!json.success) {
-    throw new Error(json.error?.message ?? 'Janjez API error');
+  if (!response.ok || !json.success) {
+    throw new Error(json.error?.message ?? `Janjez API error (${response.status})`);
   }
-
   return json.data as T;
 }
 
