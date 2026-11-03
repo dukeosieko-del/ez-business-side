@@ -444,3 +444,20 @@ On **main**: `docs/BUSINESS-SIDE-WORKTREE.md` and `docs/RECON-BUSINESS-SIDE-2026
 - Vercel runtime error aggregation returned no clusters for the selected seven-day window. Authenticated browser end-to-end tests remain pending.
 - No Supabase migration or RLS policy was applied. No wallet balance, withdrawal, payment, customer record, or bulk email operation was executed.
 - The frozen Janjez main application and database were not accessed.
+
+## 23. Repair branch verification — 2026-11-03
+
+- Repair branch: `fix/business-side-api-auth-withdrawals`
+- Latest repair commit at time of this update: `2cfe84a1c99a12fbb01c3674e82e7f9e09445ed0`
+- Vercel preview deployment: `dpl_3zJ8MQ9aKyDYm7zRsVg3SYqFZYLC` — **READY**
+- Preview URL: `https://ez-business-side-s2uib863i-dukeosieko-dels-projects.vercel.app`
+- Build: Next.js 16.3.5 compiled successfully; TypeScript completed; all 47 static pages generated.
+- npm install audit: 40 vulnerabilities remain (3 low, 35 moderate, 1 high, 1 critical). No `npm audit fix --force` was run.
+- Preview checks: `/`, `/auth/sign-in`, `/dashboard/wallet`, `/dashboard/withdrawals`, `/admin/withdrawals` returned HTTP 200; `/api/health` returned HTTP 200 with database healthy (244 ms). GET to POST-only wallet/withdrawal endpoints returned 405 as expected.
+- The first preview attempt exposed missing preview-scoped `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SITE_URL` plus optional Main API signing secret. Public URL variables were mirrored from production into Preview; the Main API signing secret is now optional at app boot and the integration throws an explicit configuration error if invoked without it. No secret values were copied into source or chat.
+- Latest preview runtime log check: no error/fatal logs in the selected 30-minute window.
+- Authenticated API/browser tests remain unverified: Vercel's preview share-link fetch returned a deployment-authentication error for API requests. Do not treat unauthenticated page 200s as authenticated workflow proof.
+- Production domain was not promoted to this repair commit. Existing production deployment remains unchanged pending authenticated end-to-end verification and review.
+- Wallet top-ups return 503 until verified payment settlement is implemented. Automated withdrawal approval/payout returns 503; partner withdrawal requests write only a pending row to `withdrawal_requests`. No wallet debit or payout was executed.
+- Brevo production sender/API key remain unconfigured; transactional email will now fail explicitly rather than silently pretending delivery succeeded.
+- No Supabase migrations or RLS changes were applied.

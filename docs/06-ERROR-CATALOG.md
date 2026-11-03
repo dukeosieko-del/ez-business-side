@@ -27,3 +27,14 @@
 - Automated withdrawal approval and M-Pesa payout remain disabled pending verified B2C integration and ledger reconciliation.
 - No Supabase migration or RLS policy was applied.
 - Frozen Janjez main app and database were not accessed.
+
+## Repair branch / preview update — 2026-11-03
+
+- Fixed admin authorization to resolve the opaque session token through `sessions.token_hash` before checking `partners.is_admin`.
+- Corrected affiliate identity lookup to resolve `partners.janjez_user_id`; affiliate registration now uses the live `affiliate_code` schema column and is idempotent for an existing affiliate.
+- Corrected withdrawal creation, history, and rejection to use `withdrawal_requests`, its actual `mpesa_number` / `rejected_reason` columns, and allowed `pending` status.
+- Automated approval and wallet top-ups deliberately return 503 until payout integration / verified payment settlement is complete. No money is moved.
+- Added wallet error/loading states, partner-scoped wallet history, and the withdrawal request form on the wallet page.
+- Brevo transport now requires `BREVO_API_KEY` and `BREVO_SENDER_EMAIL` and surfaces provider failures.
+- Preview build `dpl_3zJ8MQ9aKyDYm7zRsVg3SYqFZYLC` READY; route and health checks recorded in `docs/BUILD-RECORD.md`.
+- Remaining blockers: authenticated end-to-end verification; production Brevo credentials/sender; 40 npm audit findings; automated payout/payment integrations.
