@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { getChildSession } from '@/lib/child-users/session';
-import { callJanjez } from '@/lib/janjez-api/client';
 
 const orderSchema = z.object({
   panel_id: z.string().uuid(),
@@ -114,36 +113,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Payment failed' }, { status: 400 });
   }
 
-  // Submit to Janjez API via HMAC-signed call
-  let externalOrderId: string | null = null;
-  try {
-    const janjezResult = await callJanjez<{ id: string }>({
-      method: 'POST',
-      path: '/orders',
-      body: {
-        panel_id, service_id, child_user_id: session.user_id, quantity, link,
-        charge: totalCharge, cost: totalCost, markup,
-        idempotency_key: idempotencyKey,
-      },
-      idempotencyKey,
-    });
-    externalOrderId = janjezResult.id;
-  } catch {
-    // Janjez unreachable — keep order in pending_submission for retry
-    await supabase.from('child_orders').update({ status: 'pending_submission' }).eq('id', reserved.id);
-    return NextResponse.json({
-      success: true,
-      data: { ...reserved, status: 'pending_submission' },
-    });
-  }
-
+  // Business Side owns order lifecycle; external provider submission via adapter.
   await supabase.from('child_orders').update({
     status: 'submitted',
-    external_order_id: externalOrderId,
   }).eq('id', reserved.id);
 
   return NextResponse.json({
     success: true,
-    data: { ...reserved, status: 'submitted', external_order_id: externalOrderId },
+    data: { ...reserved, status: 'submitted' },
   });
 }

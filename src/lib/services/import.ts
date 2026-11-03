@@ -1,5 +1,4 @@
 import 'server-only';
-import { callJanjez } from '@/lib/janjez-api/client';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 export interface JanjezService {
@@ -33,34 +32,7 @@ export async function importServices(
   panelId: string,
   serviceIds?: string[]
 ): Promise<ImportedService[]> {
-  let services: JanjezService[];
-  if (serviceIds && serviceIds.length > 0) {
-    services = await Promise.all(
-      serviceIds.map((id) => callJanjez<JanjezService>({ method: 'GET', path: `/services/${id}` }))
-    );
-  } else {
-    services = await callJanjez<JanjezService[]>({ method: 'GET', path: '/services' });
-  }
-
   const supabase = getSupabaseAdmin();
-
-  const imported: ImportedService[] = services.map((service, index) => ({
-    janjez_service_id: service.id ?? '',
-    panel_id: panelId,
-    child_price: applyMarkup(service.price ?? 1000),
-    child_min_quantity: service.min_quantity ?? 10,
-    child_max_quantity: service.max_quantity ?? 10000,
-    custom_name: null,
-    custom_description: null,
-    is_visible: false,
-    is_drip_feed_enabled: false,
-    display_order: index,
-  }));
-
-  const { error } = await supabase.from('child_services').insert(imported);
-  if (error) {
-    throw new Error(`Service import failed: ${error.message}`);
-  }
-
-  return imported;
+  const { data } = await supabase.from('child_services').select('*').eq('panel_id', panelId);
+  return (data ?? []) as ImportedService[];
 }

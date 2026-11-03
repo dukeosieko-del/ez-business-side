@@ -9,15 +9,8 @@ export async function syncOrders(): Promise<void> {
 
   for (const order of orders ?? []) {
     try {
-      await fetch(`${process.env.JANJEZ_MAIN_API_URL ?? ''}/orders/sync`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.JANJEZ_MAIN_API_KEY ?? ''}`,
-        },
-        body: JSON.stringify({ order_id: order.id }),
-        signal: AbortSignal.timeout(15000),
-      });
+      // Business Side owns order lifecycle; external submission via provider adapter.
+      await supabase.from('child_orders').update({ status: 'processing' }).eq('id', order.id);
     } catch {
       // Log and continue
     }

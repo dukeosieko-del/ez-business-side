@@ -1,155 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { createSession } from '@/lib/auth/session';
-import { env } from '@/lib/config/env';
-import { createHmac, randomUUID } from 'crypto';
-import { isOnboarded } from '@/lib/onboarding/state';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
+  const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const error = searchParams.get('error');
-  const janjezUserId = searchParams.get('janjez_user_id');
-  const janjezEmail = searchParams.get('janjez_email');
-  const janjezFullName = searchParams.get('janjez_full_name');
-  const janjezPhone = searchParams.get('janjez_phone');
+  const next = searchParams.get('next') ?? '/dashboard';
 
-  if (error) {
-    return NextResponse.redirect(
-      new URL(`/auth/error?reason=${encodeURIComponent(error)}`, request.url)
-    );
-  }
-
-  if (janjezUserId) {
-    try {
-      const fullName = janjezFullName ?? janjezEmail?.split('@')[0] ?? 'User';
-      const phone = janjezPhone ?? '';
-
-      const syncRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://business.janjez.social'}/api/auth/sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          janjez_user_id: janjezUserId,
-          email: janjezEmail ?? '',
-          full_name: fullName,
-          phone,
-        }),
-        signal: AbortSignal.timeout(15000),
-      });
-
-      if (!syncRes.ok) {
-        throw new Error('Session sync failed');
+  if (code) {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          },
+        },
       }
-
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'unknown';
-      console.error('Direct auth sync error:', message);
-      return NextResponse.redirect(
-        new URL(`/auth/error?reason=auth_failed&detail=${encodeURIComponent(message)}`, request.url)
-      );
-    }
-  }
-
-  if (!code) {
-    return NextResponse.redirect(new URL('/auth/error?reason=missing_auth', request.url));
-  }
-
-  try {
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const nonce = randomUUID();
-    const body = JSON.stringify({ code, client_id: 'ez-business-side' });
-    const bodyHash = createHmac('sha256', env.JANJEZ_MAIN_API_SECRET)
-      .update(body)
-      .digest('hex');
-    const payload = `POST\n/oauth/token\n${bodyHash}\n${timestamp}\n${nonce}`;
-    const signature = createHmac('sha256', env.JANJEZ_MAIN_API_SECRET)
-      .update(payload)
-      .digest('hex');
-
-    const exchangeResponse = await fetch(`${env.JANJEZ_MAIN_API_URL}/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Business-Side-API-Key': env.JANJEZ_MAIN_API_KEY,
-        'X-Timestamp': timestamp,
-        'X-Nonce': nonce,
-        'X-Signature': signature,
-      },
-      body,
-      signal: AbortSignal.timeout(15000),
-    });
-
-    if (!exchangeResponse.ok) {
-      throw new Error(`Token exchange failed: ${exchangeResponse.status}`);
-    }
-
-    const exchangeJson = await exchangeResponse.json();
-
-    if (!exchangeJson.success) {
-      throw new Error(exchangeJson.error?.message ?? 'Token exchange failed');
-    }
-
-    const { janjez_user_id, email, full_name, phone } = exchangeJson.data;
-
-    const supabase = getSupabaseAdmin();
-    const { data: existingPartner } = await supabase
-      .from('partners')
-      .select('id, onboarding_state, status')
-      .eq('janjez_user_id', janjez_user_id)
-      .single();
-
-    let partnerId: string;
-    let onboardingState: string = 'pending';
-
-    if (existingPartner) {
-      partnerId = existingPartner.id;
-      onboardingState = existingPartner.onboarding_state ?? 'pending';
-    } else {
-      const { data: newPartner, error: createError } = await supabase
-        .from('partners')
-        .insert({
-          janjez_user_id,
-          janjez_email: email,
-          display_name: full_name ?? email.split('@')[0],
-          phone: phone ?? '',
-          status: 'pending',
-          onboarding_state: 'pending',
-        })
-        .select('id, onboarding_state')
-        .single();
-
-      if (createError || !newPartner) {
-        throw new Error(`Partner creation failed: ${createError?.message}`);
-      }
-
-      partnerId = newPartner.id;
-      onboardingState = newPartner.onboarding_state;
-    }
-
-    await createSession({
-      partner_id: partnerId,
-      janjez_user_id,
-      created_at: new Date().toISOString(),
-    });
-
-    await supabase.from('audit_log').insert({
-      actor_type: 'partner',
-      actor_id: partnerId,
-      action: 'sso_login',
-      metadata: { janjez_user_id, onboardingState },
-    });
-
-    if (!isOnboarded(onboardingState as Parameters<typeof isOnboarded>[0])) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'unknown';
-    console.error('SSO callback error:', message);
-    return NextResponse.redirect(
-      new URL(`/auth/error?reason=sso_failed&detail=${encodeURIComponent(message)}`, request.url)
     );
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      return NextResponse.redirect(`${origin}${next}`);
+    }
   }
+
+  return NextResponse.redirect(`${origin}/auth/error?reason=auth_callback_failed`);
 }

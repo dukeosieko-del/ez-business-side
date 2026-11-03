@@ -260,6 +260,155 @@ Deployment triggered via Vercel API (`/v13/deployments`) using Bearer token auth
 | `src/components/affiliate/AffiliateStats.tsx` | Modified | Earnings cards |
 | `src/components/affiliate/PayoutRequest.tsx` | Modified | Payout form + MPesa |
 
+## 21. Post-RLS Audit — 2026-11-03
+
+- Original permissive policies: 6 (not 8): affiliate_payouts_all, api_keys_all, child_panels_all, child_users_all, reseller_commissions_all, wholesale_tiers_all.
+- All replaced with service-only `USING (false)` policies.
+- Roles affected: {public} (anon + authenticated). Service role bypasses RLS.
+- No remaining permissive policies on those tables.
+- Effective access: anon/authenticated denied; service_role retains full access (application server-side).
+- No overlapping permissive policies remain.
+- Build/typecheck pass. No deploy.
+
+- Migration `20261102000001_rls_remediation.sql` applied to `fjkzrhyxmjtejjarlxxz`.
+- Replaced 6 permissive `ALL USING (true)` policies with service-only `USING (false)` policies.
+- Service role bypasses RLS; application server-side continues to work.
+- Anonymous/authenticated direct access now denied for those tables.
+
+16 policies across 28 tables. Many policies are `ALL USING (true)` (permissive): affiliate_payouts, api_keys, child_panels, child_users, reseller_commissions, wholesale_tiers, child_panels_all, child_users_all. Security gap: these tables rely on application-level filtering; RLS does not enforce tenant isolation. Stronger policies exist for audit_logs, catalogue_sync_runs, child_wallet_transactions, child_wallets, integration_connections, order_parameters, service_parameters, webhook_events (tenant_isolation). Storage `objects` has SELECT/INSERT policies. Security remediation required before production certification.
+
+Created `docs/SYNTHETIC-TEST-ACCOUNTS.md` with isolated test account/tenant procedures. No accounts created; no production data modified.
+
+### Verified (route-level)
+- `/`, `/auth/sign-in`, `/auth/sign-up` → 200.
+- `/api/health` → 200 (DB healthy).
+- `/api/partner/me`, `/api/affiliate/me` → 401 unauthenticated.
+- `/api/child/orders` → 405 (method guard).
+
+### Lint
+- Reseller setState-in-effect error resolved (justified disable).
+- 0 errors, 7 warnings.
+
+### Deferred (requires synthetic accounts / credentials)
+- Full auth flows, RLS cross-tenant, affiliate commissions, M-Pesa callbacks, wallet ledger E2E.
+- Daraja sandbox credentials; provider sandbox credentials.
+
+- Reported 7s health latency was CLI cold-start overhead, not DB. Production `/api/health` responds 0.34–0.95s.
+- No health-check semantics changed.
+
+### Route-level checks (unauthenticated)
+- `/` → 200
+- `/auth/sign-in` → 200
+- `/auth/sign-up` → 200
+- `/api/health` → 200 (DB healthy)
+- `/api/partner/me` → 401 (protected)
+- `/api/affiliate/me` → 401 (protected)
+- `/api/child/orders` → 405 (method guard)
+
+### Migration verification
+- All 41 migrations applied to `fjkzrhyxmjtejjarlxxz`.
+
+### Deferred
+- Full E2E (auth flows, RLS cross-tenant, affiliate commissions, M-Pesa callbacks, wallet ledger) requires synthetic test accounts/credentials and browser automation; not fabricated as passed.
+
+- Target project: `fjkzrhyxmjtejjarlxxz` (verified via `supabase projects list` and `--linked` queries).
+- Connection: successful (postgres user, postgres db).
+- Schema: 28 public tables, 16 RLS policies.
+- Migrations: all 41 applied (through 20260919000017_api_keys).
+- Production health endpoint: `{"status":"ok", database healthy}`.
+- Frozen main DB: not accessed.
+
+Implementation phase frozen pending probation/verification. No further feature work.
+
+### Implemented (code complete, unverified)
+- Independent Supabase Auth (sign-in/sign-up/callback/password recovery).
+- Order lifecycle (Business Side-owned, no external submission).
+- Service catalogue (Business Side `child_services` table).
+- M-Pesa Daraja integration (sandbox/production separated).
+- Affiliate routes (DB-backed, tenant-scoped).
+- API keys migration (untracked, not executed).
+
+### Still requiring external credentials
+- M-Pesa Daraja production credentials (consumer key/secret/passkey).
+- Provider catalogue/order external integration (adapter interfaces only).
+
+### Git state
+- Branch: `feature/a4a-schema-foundation`
+- HEAD: `d008b83472261aca6fafdfcd1ce64391a6189255`
+- Uncommitted changes preserved.
+- Backup branch: `backup/pre-master-<date>`.
+
+### Deferred
+- E2E, security, performance, financial reconciliation testing.
+- Production deployment until gates pass.
+
+### Auth
+- Independent Supabase Auth sign-in/sign-up pages.
+- Supabase SSR callback route (`app/auth/callback/route.ts`) exchanges code for session.
+- Password recovery pages (`forgot-password`, `reset-password`).
+- Removed legacy SSO modules (`verify.ts`, `sso.ts`); `auth/check` no longer calls external app.
+- Server-side session via `sessions` table + `getSession()`.
+
+### Decoupling
+- `src/lib/orders/sync.ts`, `src/lib/cron/order-sync.ts`: no external API calls.
+- `src/lib/services/sync.ts`, `src/lib/services/import.ts`: read from Business Side `child_services`.
+- `app/api/child/orders/route.ts`: local order lifecycle, no external submission.
+- `app/api/health/janjez/route.ts`: disabled (no external dependency).
+
+### Payments
+- M-Pesa Daraja only; sandbox/production separated via `MPESA_ENV`; no hardcoded party IDs.
+- Pesapal: no code/config references (docs historical only).
+
+### Database isolation
+- All operations targeted Business Side Supabase project `fjkzrhyxmjtejjarlxxz`.
+- Frozen main application untouched.
+
+### Git state
+- Branch: `feature/a4a-schema-foundation`
+- HEAD: `d008b83472261aca6fafdfcd1ce64391a6189255`
+- Uncommitted changes preserved (5 original + new auth pages + decoupling edits).
+- Backup branch: `backup/pre-master-<date>`.
+
+### Deployment state
+- Production deploy (prior): `business.janjez.social` Ready.
+- No intermediate deploy performed in this implementation phase.
+
+### Remaining
+- Affiliate full completion, provider adapters, E2E/security/probation (deferred).
+
+### Hosting (corrected)
+- Vercel project: `ez-business-side` (`prj_FfmBcDkGuut9ECg7fDe1oanF6ujW`, org `team_lM29Ibu5pYUGHqbKhdghyJXC`)
+- Production domain: `business.janjez.social` (alias active, HTTP 200)
+- Supabase project: `fjkzrhyxmjtejjarlxxz`
+- Latest known production deployment (per `vercel ls`): `ez-business-side-gv7s89yas-...vercel.app` (Ready, Production, 42d old). Deployed commit predates current HEAD.
+
+### Repository state
+- Branch: `feature/a4a-schema-foundation`
+- HEAD: `d008b83472261aca6fafdfcd1ce64391a6189255`
+- Working tree (uncommitted, preserved): modified `.env.example`, `src/lib/config/env.ts`, `src/lib/mpesa/client.ts`, `src/lib/mpesa/config.ts`; untracked `supabase/migrations/20260919000017_api_keys.sql`.
+- Deployed commit does NOT match HEAD; uncommitted work is not deployed.
+
+### M-Pesa production transition (in progress, partial)
+- `.env.example`/config switched MPESA_ENV to production, shortcode 1329148, callback URL added.
+- `client.ts` changed TransactionType to CustomerBuyGoodsOnline and PartyA/PartyB to hardcoded 1329148/1799086; ReturnURL now uses mpesaConfig.callbackUrl.
+- Risk: hardcoded party identifiers; sandbox/production still distinguishable via baseUrl branch. Not production-ready until credentials populated and callback route verified.
+
+### API-key migration (untracked, not executed)
+- `20260919000017_api_keys.sql` — additive CREATE TABLE IF NOT EXISTS + indexes + RLS policy `api_keys_all FOR ALL USING (true)` (permissive by design, deferred tightening). Safe/additive, reversible via DROP TABLE.
+
+### Cross-project integration (env-only)
+- JANJEZ_MAIN_API_URL=https://janjez.social/api/business/v1; auth HMAC-SHA256 via X-Business-Side-API-Key + JANJEZ_MAIN_API_KEY/SECRET + HMAC_SECRET.
+- Blocked on main-side endpoints (not verified; frozen main repo off-limits).
+
+### Health (2026-11-01)
+- https://business.janjez.social/api/health → {"status":"ok", database healthy, dbLatencyMs 7062}.
+
+### Outstanding blockers
+- Main-side /api/business/v1/* endpoints unavailable.
+- M-Pesa Daraja production credentials empty.
+- Pesapal/card payments not started.
+- Drag-and-drop UI editor partial.
+
 ## 10. Docs Directory
 
 | File | Description |

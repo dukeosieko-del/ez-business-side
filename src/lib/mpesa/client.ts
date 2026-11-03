@@ -116,7 +116,7 @@ export async function initiateStkPush(
       PartyA: phone,
       PartyB: mpesaConfig.shortcode,
       PhoneNumber: phone,
-      ReturnURL: `${env.NEXT_PUBLIC_SITE_URL}/api/partner/activate/callback`,
+      ReturnURL: mpesaConfig.callbackUrl,
       InvoiceNo: idempotencyKey,
       OrgAccountReference: idempotencyKey,
       TransactionDesc: 'Account activation',
