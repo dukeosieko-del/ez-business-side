@@ -461,3 +461,16 @@ On **main**: `docs/BUSINESS-SIDE-WORKTREE.md` and `docs/RECON-BUSINESS-SIDE-2026
 - Wallet top-ups return 503 until verified payment settlement is implemented. Automated withdrawal approval/payout returns 503; partner withdrawal requests write only a pending row to `withdrawal_requests`. No wallet debit or payout was executed.
 - Brevo production sender/API key remain unconfigured; transactional email will now fail explicitly rather than silently pretending delivery succeeded.
 - No Supabase migrations or RLS changes were applied.
+
+## 24. Final preview verification — 2026-11-03
+
+- Latest repair code commit: `e78a850f0079531cf9462378810e8a42123f7cad`.
+- Latest Vercel preview deployment: `dpl_22URetVzFqk77iQBA7G4bZhmgqso` — **READY**.
+- Preview build completed: Next.js 16.3.5 compile successful; TypeScript successful; 47 static pages generated.
+- Preview HTTP checks: `/`, `/auth/sign-in`, `/dashboard/wallet`, `/dashboard/withdrawals`, `/admin/withdrawals` → 200; `/api/health` → 200 with database healthy (139 ms); GET on POST-only `/api/partner/withdrawal/request` and `/api/partner/wallet/topup` → 405 as expected.
+- Preview runtime error logs: no error/fatal records in the selected 30-minute window.
+- API endpoints requiring a session could not be directly exercised through the preview share-link fetch because Vercel deployment authentication blocked those API fetches. Authenticated user journeys remain unverified.
+- PR: [#3 — Business Side auth, wallet and withdrawal repairs](https://github.com/dukeosieko-del/ez-business-side/pull/3), draft, base `feature/a4a-schema-foundation`.
+- No production deployment or promotion was performed. Production `business.janjez.social/api/health` remains HTTP 200 and database healthy (383 ms at last check).
+- M-Pesa B2C approval/payout helpers now explicitly fail closed; no fake "processed" payout records are created.
+- Wallet top-ups remain disabled (503) until verified payment settlement exists.

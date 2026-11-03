@@ -38,3 +38,6 @@
 - Brevo transport now requires `BREVO_API_KEY` and `BREVO_SENDER_EMAIL` and surfaces provider failures.
 - Preview build `dpl_3zJ8MQ9aKyDYm7zRsVg3SYqFZYLC` READY; route and health checks recorded in `docs/BUILD-RECORD.md`.
 - Remaining blockers: authenticated end-to-end verification; production Brevo credentials/sender; 40 npm audit findings; automated payout/payment integrations.
+
+- Follow-up hardening: affiliate registration now writes the actual `affiliate_code` column and is idempotent; affiliate payout lookup now resolves partner identity before selecting the affiliate.
+- Legacy withdrawal approval and fake M-Pesa payout helpers now fail closed rather than debit or create synthetic paid transactions.
