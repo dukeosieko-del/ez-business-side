@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Quantity must be between ${service.child_min_quantity} and ${service.child_max_quantity}` }, { status: 400 });
   }
 
-  const totalCharge = Math.round(Number(service.child_price) * quantity * 100) / 100;
+  const totalCharge = Math.round(Number(service.child_price) * quantity / 1000 * 100) / 100;
   if (panel.status !== 'demo') {
     return NextResponse.json({
       error: 'Live ordering is temporarily unavailable while provider fulfilment and payment settlement are being verified.',
