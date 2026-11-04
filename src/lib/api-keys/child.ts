@@ -12,7 +12,7 @@ export interface ChildApiPrincipal {
 
 export type ChildApiAuthResult =
   | { ok: true; principal: ChildApiPrincipal }
-  | { ok: false; status: 401 | 403 | 429; error: string };
+  | { ok: false; status: 401 | 403 | 429 | 503; error: string };
 
 function equalHash(a: string, b: string): boolean {
   const left = Buffer.from(a, 'hex');
@@ -60,7 +60,7 @@ export async function authenticateChildApiKey(
     p_key_id: key.key_id,
     p_limit: key.rate_limit,
   });
-  if (limitError) return { ok: false, status: 503, error: 'API rate limiter is unavailable' } as ChildApiAuthResult;
+  if (limitError) return { ok: false, status: 503, error: 'API rate limiter is unavailable' };
   if (!withinLimit) return { ok: false, status: 429, error: 'API key rate limit exceeded' };
 
   await supabase.from('child_api_keys').update({ last_used_at: new Date().toISOString() }).eq('key_id', key.key_id);
