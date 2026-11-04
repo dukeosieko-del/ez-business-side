@@ -30,7 +30,6 @@ interface Commission {
 interface Click {
   id: string;
   ref_code: string;
-  ip: string | null;
   clicked_at: string;
   converted_order_id: string | null;
 }
@@ -73,7 +72,7 @@ export default function AffiliateDashboard() {
         const data = await res.json();
         setAffiliate(data.data);
         const base = (typeof window !== 'undefined' ? window.location.origin : '') || '';
-        setLink(`${base}/?ref=${data.data.affiliate_code}`);
+        setLink(`${base}/api/affiliate/track/click?ref=${encodeURIComponent(data.data.affiliate_code)}`);
       } catch {
         setAffiliateError('Network error');
       } finally {
@@ -251,7 +250,7 @@ export default function AffiliateDashboard() {
                   <thead>
                     <tr className="border-b border-gray-200">
                       <th className="text-left py-3 px-4 font-medium text-gray-500">Date</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">IP</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-500">Referral code</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
                     </tr>
                   </thead>
@@ -259,7 +258,7 @@ export default function AffiliateDashboard() {
                     {stats.recent_clicks.map(click => (
                       <tr key={click.id} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="py-3 px-4">{new Date(click.clicked_at).toLocaleDateString()}</td>
-                        <td className="py-3 px-4">{click.ip ?? '—'}</td>
+                        <td className="py-3 px-4">{click.ref_code}</td>
                         <td className="py-3 px-4">
                           {click.converted_order_id ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
