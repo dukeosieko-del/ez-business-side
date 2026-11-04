@@ -21,7 +21,7 @@ export async function GET(
 
   const { data: services, error } = await supabase
     .from('child_services')
-    .select('id, child_price, child_min_quantity, child_max_quantity, custom_name, custom_description, is_visible')
+    .select('id, child_price, child_min_quantity, child_max_quantity, custom_name, custom_description, category, is_visible')
     .eq('panel_id', panel.id)
     .eq('is_visible', true)
     .order('display_order', { ascending: true });
@@ -34,6 +34,7 @@ export async function GET(
     id: service.id,
     name: service.custom_name || 'Service',
     description: service.custom_description || '',
+    category: service.category || 'Other',
     child_price: Number(service.child_price),
     child_min_quantity: service.child_min_quantity,
     child_max_quantity: service.child_max_quantity,
