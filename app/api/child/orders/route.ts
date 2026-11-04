@@ -4,122 +4,100 @@ import { z } from 'zod';
 import { getChildSession } from '@/lib/child-users/session';
 
 const orderSchema = z.object({
-  panel_id: z.string().uuid(),
+  panel_id: z.string().min(1).max(120),
   service_id: z.string().uuid(),
-  quantity: z.number().min(1).max(1000),
-  link: z.string().url(),
+  quantity: z.number().int().min(1).max(1000),
+  link: z.string().url().max(2048),
 });
 
 export async function POST(req: NextRequest) {
   const idempotencyKey = req.headers.get('idempotency-key');
-  if (!idempotencyKey) {
-    return NextResponse.json({ error: 'Idempotency-Key header required' }, { status: 400 });
+  if (!idempotencyKey || idempotencyKey.length < 12 || idempotencyKey.length > 128) {
+    return NextResponse.json({ error: 'A valid Idempotency-Key header is required' }, { status: 400 });
   }
 
   const session = await getChildSession();
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const supabase = getSupabaseAdmin();
+  const parsed = orderSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  // Idempotency: return existing order if key already used
-  const { data: existing } = await supabase
-    .from('child_orders')
-    .select('*')
-    .eq('idempotency_key', idempotencyKey)
+  const { panel_id: panelRef, service_id, quantity, link } = parsed.data;
+  const supabase = getSupabaseAdmin();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(panelRef);
+
+  const { data: panel } = await supabase
+    .from('child_panels')
+    .select('id, status')
+    .eq(isUuid ? 'id' : 'subdomain', panelRef)
+    .in('status', ['active', 'demo'])
     .maybeSingle();
 
-  if (existing) {
-    return NextResponse.json({ success: true, data: existing });
-  }
-
-  const body = await req.json();
-  const parsed = orderSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
-
-  const { panel_id, service_id, quantity, link } = parsed.data;
-
-  // Tenant isolation: session user must belong to the panel
-  if (session.panel_id !== panel_id) {
+  if (!panel || session.panel_id !== panel.id) {
     return NextResponse.json({ error: 'Cross-panel access denied' }, { status: 403 });
   }
 
-  // Verify service belongs to panel
-  const { data: service } = await supabase
-    .from('child_services')
-    .select('id, name, child_price, cost')
-    .eq('id', service_id)
-    .eq('panel_id', panel_id)
-    .single();
-  if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 });
-
-  // Server-side price authority
-  const totalCharge = Math.round(service.child_price * quantity * 100) / 100;
-  const totalCost = Math.round(service.cost * quantity * 100) / 100;
-  const markup = totalCharge - totalCost;
-
-  // Check wallet balance
-  const { data: wallet } = await supabase
-    .from('child_wallets')
-    .select('current_balance_minor')
-    .eq('customer_id', session.user_id)
+  const { data: existing } = await supabase
+    .from('child_orders')
+    .select('id, status, charge, created_at')
+    .eq('idempotency_key', idempotencyKey)
+    .eq('panel_id', panel.id)
+    .eq('child_user_id', session.user_id)
     .maybeSingle();
 
-  const balanceMinor = wallet?.current_balance_minor ?? 0;
-  const chargeMinor = Math.round(totalCharge * 100);
+  if (existing) return NextResponse.json({ success: true, data: existing, replayed: true });
 
-  if (balanceMinor < chargeMinor) {
-    return NextResponse.json({ error: 'Insufficient balance' }, { status: 400 });
+  const { data: service, error: serviceError } = await supabase
+    .from('child_services')
+    .select('id, child_price, cost, child_min_quantity, child_max_quantity, is_visible, custom_name')
+    .eq('id', service_id)
+    .eq('panel_id', panel.id)
+    .eq('is_visible', true)
+    .maybeSingle();
+
+  if (serviceError || !service) return NextResponse.json({ error: 'Service not found or unpublished' }, { status: 404 });
+  if (quantity < service.child_min_quantity || quantity > service.child_max_quantity) {
+    return NextResponse.json({ error: `Quantity must be between ${service.child_min_quantity} and ${service.child_max_quantity}` }, { status: 400 });
   }
 
-  // Reserve order with idempotency key
-  const { data: reserved, error: reserveError } = await supabase
-    .from('child_orders')
-    .insert({
-      panel_id, service_id, child_user_id: session.user_id, quantity, link,
-      charge: totalCharge, cost: totalCost, markup,
-      status: 'pending_payment',
-      idempotency_key: idempotencyKey,
-    })
-    .select()
-    .single();
+  const totalCharge = Math.round(Number(service.child_price) * quantity * 100) / 100;
 
-  if (reserveError?.code === '23505') {
-    const { data: winner } = await supabase
+  // Demo orders are sample records only: no wallet debit and no provider submission.
+  if (panel.status === 'demo') {
+    const { data: demoOrder, error } = await supabase
       .from('child_orders')
-      .select('*')
-      .eq('idempotency_key', idempotencyKey)
+      .insert({
+        panel_id: panel.id,
+        service_id,
+        child_user_id: session.user_id,
+        quantity,
+        link,
+        charge: totalCharge,
+        cost: 0,
+        markup: totalCharge,
+        status: 'demo_completed',
+        payment_method: 'demo',
+        idempotency_key: idempotencyKey,
+        metadata: { demo: true, provider_submission: false },
+      })
+      .select('id, status, charge, created_at')
       .single();
-    return NextResponse.json({ success: true, data: winner });
+
+    if (error || !demoOrder) return NextResponse.json({ error: 'Could not save demo order' }, { status: 500 });
+    return NextResponse.json({ success: true, mode: 'demo', data: demoOrder }, { status: 201 });
   }
 
-  if (reserveError || !reserved) {
-    return NextResponse.json({ error: 'Failed to reserve order' }, { status: 500 });
-  }
-
-  // Debit wallet via immutable ledger
-  try {
-    await supabase.rpc('child_wallet_debit', {
-      p_customer_id: session.user_id,
-      p_amount_minor: chargeMinor,
-      p_reference_type: 'order',
-      p_reference_id: reserved.id,
-      p_description: `Order ${reserved.id} for service ${service_id}`,
-      p_created_by: 'system',
-    });
-  } catch (err) {
-    await supabase.from('child_orders').update({ status: 'failed' }).eq('id', reserved.id);
-    return NextResponse.json({ error: 'Payment failed' }, { status: 400 });
-  }
-
-  // Business Side owns order lifecycle; external provider submission via adapter.
-  await supabase.from('child_orders').update({
-    status: 'submitted',
-  }).eq('id', reserved.id);
-
+  // Live orders remain blocked until a real provider adapter and settlement
+  // callback are implemented and verified. Never charge for an unfulfilled order.
   return NextResponse.json({
-    success: true,
-    data: { ...reserved, status: 'submitted' },
-  });
+    error: 'Live ordering is temporarily unavailable while provider fulfilment is being verified. Demo mode remains available.',
+    code: 'LIVE_FULFILMENT_NOT_CONFIGURED',
+  }, { status: 503 });
 }
