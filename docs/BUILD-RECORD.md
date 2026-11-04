@@ -619,3 +619,13 @@ Performance advisor currently reports unused indexes only (61 informational find
 ### Import dependency
 
 The service import code is ready but cannot be validated in preview until the Business Side preview environment has a dedicated read-only `JANJEZ_MAIN_API_KEY` and `JANJEZ_MAIN_API_SECRET`. No production secret was copied into preview or source code. The import button fails explicitly if this integration is absent.
+
+
+## 18. Final handoff state — 2026-11-04
+
+- Latest branch head at handoff: `fafdf6ebc7085c78ff42bcaa66bca12c0d01a57f`.
+- Draft PR #5 is open against `feature/a4a-schema-foundation`: https://github.com/dukeosieko-del/ez-business-side/pull/5.
+- A GitHub Actions workflow was added for ESLint and Next.js build using CI-only placeholder credentials. No workflow run was returned by the repository Actions API during this session.
+- Vercel rejected the final preview creation with HTTP 402 `api-deployments-free-per-day` (100 deployments/day; retry after 24 hours). The local container has no Vercel CLI and no linked repository checkout, so there is no authorized CLI fallback.
+- Latest code changes after the READY preview include the complete Main-catalogue import implementation, category and pricing editor, per-1,000-unit charge correction, dashboard order ownership fix, and global modal/input contrast reset. These exact latest changes have not yet been compiled by Vercel.
+- Do not treat the earlier READY preview as containing the final branch head. Do not promote production.
