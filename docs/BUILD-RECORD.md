@@ -430,3 +430,86 @@ Implementation phase frozen pending probation/verification. No further feature w
 | `docs/BUILD-RECORD.md` | **This file** |
 
 On **main**: `docs/BUSINESS-SIDE-WORKTREE.md` and `docs/RECON-BUSINESS-SIDE-20260915.md` also present.
+
+
+## 22. Live API / infrastructure audit — 2026-11-03
+
+- Audited source branch `feature/a4a-schema-foundation` at `d907eca576fe9d6bcc6b9700a5efd5a71d334bef`; Vercel production deployment `dpl_D2662FFfq7VcM2dFJQzRYZ9Ew3LZ` was READY.
+- Source inventory: 41 `app/api/**/route.ts` handlers. The deployed artifact inventory previously counted 43 handlers (deployment output includes additional route artifacts).
+- Dedicated Supabase project `fjkzrhyxmjtejjarlxxz` is the only database in scope. Read-only schema inspection covered `sessions`, `partners`, `child_panels`, `affiliates`, `wallet_transactions`, and `withdrawal_requests`.
+- Confirmed source defects: admin auth compared the opaque cookie to partner UUID; withdrawal code targeted a nonexistent `withdrawals` table and mismatched columns/status; affiliate stats compared session partner UUID with Janjez user UUID; wallet top-up credited without a verified payment callback; wallet UI swallowed fetch failures; Brevo transport falsely returned success when unconfigured or when the provider returned non-2xx.
+- Repair branch: `fix/business-side-api-auth-withdrawals`. Code changes and preview verification are tracked separately from production.
+- Production Brevo variables `BREVO_API_KEY` and `BREVO_SENDER_EMAIL` are not configured. No email was sent.
+- Production dependency audit previously reported 40 findings (3 low, 35 moderate, 1 high, 1 critical). A fresh lockfile audit and dependency remediation remain required.
+- Vercel runtime error aggregation returned no clusters for the selected seven-day window. Authenticated browser end-to-end tests remain pending.
+- No Supabase migration or RLS policy was applied. No wallet balance, withdrawal, payment, customer record, or bulk email operation was executed.
+- The frozen Janjez main application and database were not accessed.
+
+## 23. Repair branch verification — 2026-11-03
+
+- Repair branch: `fix/business-side-api-auth-withdrawals`
+- Latest repair commit at time of this update: `2cfe84a1c99a12fbb01c3674e82e7f9e09445ed0`
+- Vercel preview deployment: `dpl_3zJ8MQ9aKyDYm7zRsVg3SYqFZYLC` — **READY**
+- Preview URL: `https://ez-business-side-s2uib863i-dukeosieko-dels-projects.vercel.app`
+- Build: Next.js 16.3.5 compiled successfully; TypeScript completed; all 47 static pages generated.
+- npm install audit: 40 vulnerabilities remain (3 low, 35 moderate, 1 high, 1 critical). No `npm audit fix --force` was run.
+- Preview checks: `/`, `/auth/sign-in`, `/dashboard/wallet`, `/dashboard/withdrawals`, `/admin/withdrawals` returned HTTP 200; `/api/health` returned HTTP 200 with database healthy (244 ms). GET to POST-only wallet/withdrawal endpoints returned 405 as expected.
+- The first preview attempt exposed missing preview-scoped `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SITE_URL` plus optional Main API signing secret. Public URL variables were mirrored from production into Preview; the Main API signing secret is now optional at app boot and the integration throws an explicit configuration error if invoked without it. No secret values were copied into source or chat.
+- Latest preview runtime log check: no error/fatal logs in the selected 30-minute window.
+- Authenticated API/browser tests remain unverified: Vercel's preview share-link fetch returned a deployment-authentication error for API requests. Do not treat unauthenticated page 200s as authenticated workflow proof.
+- Production domain was not promoted to this repair commit. Existing production deployment remains unchanged pending authenticated end-to-end verification and review.
+- Wallet top-ups return 503 until verified payment settlement is implemented. Automated withdrawal approval/payout returns 503; partner withdrawal requests write only a pending row to `withdrawal_requests`. No wallet debit or payout was executed.
+- Brevo production sender/API key remain unconfigured; transactional email will now fail explicitly rather than silently pretending delivery succeeded.
+- No Supabase migrations or RLS changes were applied.
+
+## 24. Final preview verification — 2026-11-03
+
+- Latest repair code commit: `e78a850f0079531cf9462378810e8a42123f7cad`.
+- Latest Vercel preview deployment: `dpl_22URetVzFqk77iQBA7G4bZhmgqso` — **READY**.
+- Preview build completed: Next.js 16.3.5 compile successful; TypeScript successful; 47 static pages generated.
+- Preview HTTP checks: `/`, `/auth/sign-in`, `/dashboard/wallet`, `/dashboard/withdrawals`, `/admin/withdrawals` → 200; `/api/health` → 200 with database healthy (139 ms); GET on POST-only `/api/partner/withdrawal/request` and `/api/partner/wallet/topup` → 405 as expected.
+- Preview runtime error logs: no error/fatal records in the selected 30-minute window.
+- API endpoints requiring a session could not be directly exercised through the preview share-link fetch because Vercel deployment authentication blocked those API fetches. Authenticated user journeys remain unverified.
+- PR: [#3 — Business Side auth, wallet and withdrawal repairs](https://github.com/dukeosieko-del/ez-business-side/pull/3), draft, base `feature/a4a-schema-foundation`.
+- No production deployment or promotion was performed. Production `business.janjez.social/api/health` remains HTTP 200 and database healthy (383 ms at last check).
+- M-Pesa B2C approval/payout helpers now explicitly fail closed; no fake "processed" payout records are created.
+- Wallet top-ups remain disabled (503) until verified payment settlement exists.
+
+
+## 25. Kilo branch reconciliation — 2026-11-04
+
+- Reconciliation preview branch: `preview/reconcile-kilo-commits-20261104`, based on repair branch head `e8225a9a0d562250541e8832194dc1b4c281f1fe`.
+- Integrated from `kilo/handy-wood-rgb`: reseller dashboard now awaits partner, wallet, then panel loads sequentially. The `test:hero` extension fix (`.js`) was already present on the repair branch and retained.
+- Deliberately not copied from Kilo's intermediate `wip` lockfile commit: it strips `dev: true` metadata from optional platform-specific packages without a corresponding dependency-manifest change. The repair branch lockfile remains intact.
+- Not integrated from `kilo/bronze-lynx-9t1`: the branch adds a gitlink at `jez-verify` pointing to commit `f105b4dc0a888fd86119f2e2b1e34bdb2b2aeeeb`, but there is no `.gitmodules` file and no accessible repository URL/target. The submodule cannot be safely resolved or built.
+- Not integrated from `kilo/emerald-dolphin-b37`: `package.json` and `package-lock.json` contain literal merge-conflict markers. That branch remains unsafe to build or merge.
+- Main's latest `BUILD-RECORD` commit `9f47d9b79b1931daaaa99a8e0698afdcd0471152` is an older deployment-history documentation update; the repair branch already has the newer audit and deployment records, so its stale historical details were not copied.
+- Production currently points at repair branch commit `e8225a9a0d562250541e8832194dc1b4c281f1fe` via deployment `dpl_Bkhdxp32pXSFw9g8sHtkGKvXf3VC`. This reconciliation is preview-only; production was not changed by this task.
+
+
+## 26. Production promotion — 2026-11-04
+
+- Promoted reconciliation commit `1f0e209e36d6b04372c1302fda6fefb2158152a9` to a Vercel production-target deployment.
+- Production deployment: `dpl_77shdCLCzspn7heqKeWpYYAtY3aE` — **READY**.
+- Production aliases confirmed: `business.janjez.social`, `ez-business-side.vercel.app`.
+- Production smoke checks after promotion: `/`, `/auth/sign-in`, `/dashboard/wallet`, `/dashboard/withdrawals`, `/admin/withdrawals`, and `/api/health` all returned HTTP 200.
+- Production database health: healthy; latest measured DB latency 358 ms.
+- Vercel runtime-error aggregation: no clusters in the selected one-hour window.
+- The deployment includes the reconciled sequential reseller dashboard loading from `kilo/handy-wood-rgb`; Kilo's unresolved `jez-verify` submodule and conflicted Emerald Dolphin package branch were not merged.
+- Remaining limitations: authenticated browser journey tests are not yet completed; Brevo credentials/sender are missing; npm audit still reports 40 vulnerabilities; wallet top-ups and automated withdrawal/M-Pesa payout remain disabled until provider settlement/reconciliation is verified.
+- No Supabase migrations or RLS changes were made. No wallet movements, payout requests, customer data changes, or bulk emails were executed.
+
+## 27. Kilo session reconciliation and final production release — 2026-11-04
+
+- Kilo cloud session reference supplied for this review: `ses_e5c83cf86ffeS57U0nGEJXhPtg`. The Kilo session store/CLI is not connected to this environment, and this identifier was not found in GitHub commit, code, or PR search. Review below is based on pushed Kilo commits accessible in the repository; unpushed/private session edits cannot be asserted as inspected.
+- Kilo branch `kilo/handy-wood-rgb` is 2 commits ahead of `main`:
+  - `142fdf49aa41ac36584da340ca8cde2770ffc0cd` (`wip`): package-lock-only removal of `dev: true` from 26 optional platform packages. Excluded because it changes dependency classification without a package manifest change and is not required for the code fix.
+  - `b53e17200caf699e854bf3276d5502be2ce65cc4`: sequential reseller dashboard data loading plus hero test script extension correction. Included the sequential loading fix; the `.js` test script correction was already present on the repair branch and retained.
+- Kilo branch `kilo/bronze-lynx-9t1` adds a gitlink `jez-verify` to commit `f105b4dc0a888fd86119f2e2b1e34bdb2b2aeeeb`, but no `.gitmodules` URL or accessible target repository was found. Excluded pending a resolvable source repository and review.
+- Kilo branch `kilo/emerald-dolphin-b37` has unresolved conflict markers in `package.json` and `package-lock.json`. Excluded as non-buildable.
+- Reconciled branch: `preview/reconcile-kilo-commits-20261104`. Its code includes the repair branch fixes plus Kilo's sequential reseller-loading change. Its package-lock remains the previously buildable lockfile; the Kilo WIP lockfile mutation was not copied.
+- Preview verification: deployment `dpl_E2yzKmQCwoPtKaBmguuJFzwrUU2f` READY on commit `71a2bead8bf626e7fb79130feeb8b11eecad5402`; `/`, `/auth/sign-in`, `/dashboard/wallet`, `/dashboard/withdrawals`, `/admin/withdrawals`, `/api/health` returned HTTP 200; database healthy; no error/fatal runtime logs in the selected 30-minute window.
+- Final production deployment: `dpl_DNA651RFVAU1xuxZz8BtHhB2Dc35` — READY, target production, commit `71a2bead8bf626e7fb79130feeb8b11eecad5402`, aliases include `business.janjez.social` and `ez-business-side.vercel.app`.
+- Post-promotion smoke checks: `/`, `/auth/sign-in`, `/dashboard/reseller`, `/dashboard/affiliate`, `/dashboard/wallet`, `/dashboard/withdrawals`, `/admin/withdrawals`, and `/api/health` returned HTTP 200. Database healthy; latest measured DB latency 370 ms. No runtime error clusters in the selected one-hour window and no error/fatal logs in the selected 30-minute window.
+- Remaining blockers: private Kilo session review itself remains unavailable; authenticated browser workflows still need a signed-in test account; Brevo production credentials/sender are not configured; npm audit still reports 40 vulnerabilities; wallet top-ups and automated M-Pesa payouts remain disabled pending verified provider settlement and reconciliation.
+- No Supabase migrations/RLS changes, wallet movements, payouts, customer changes, or bulk emails were performed. Frozen main Janjez app/database remain untouched.

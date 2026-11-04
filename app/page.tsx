@@ -345,11 +345,6 @@ export default function HomePage() {
                       Sign In
                     </Link>
                   </li>
-                  <li>
-                    <Link href="/dashboard" className="text-white/60 transition hover:text-white">
-                      Dashboard
-                    </Link>
-                  </li>
                 </ul>
               </div>
             </div>
