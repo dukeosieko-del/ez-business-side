@@ -1,0 +1,39 @@
+name: Business Side CI
+
+on:
+  push:
+    branches:
+      - feat/child-panel-platform-e2e-20261104
+  pull_request:
+    branches:
+      - feature/a4a-schema-foundation
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service
+      JANJEZ_MAIN_API_URL: https://example.invalid/api/business/v1
+      JANJEZ_MAIN_API_KEY: ci-placeholder-main-key
+      NEXT_PUBLIC_SITE_URL: https://business.janjez.social
+      MPESA_ENV: sandbox
+      HMAC_SECRET: ci-only-placeholder-secret-0123456789abcdef0123456789abcdef
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run ESLint
+        run: npm run lint
+      - name: Build Next.js application
+        run: npm run build
