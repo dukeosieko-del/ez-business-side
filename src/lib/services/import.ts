@@ -62,7 +62,7 @@ export async function importServices(panelId: string, serviceIds?: string[]): Pr
       panel_id: panelId,
       janjez_service_id: service.id,
       cost: basePrice,
-      child_price: old ? Number(old.child_price) : applyMarkup(basePrice, 50),
+      child_price: old ? Math.min(Math.max(Number(old.child_price), basePrice), basePrice * 2) : applyMarkup(basePrice, 50),
       child_min_quantity: min,
       child_max_quantity: max,
       custom_name: old?.custom_name ?? null,
