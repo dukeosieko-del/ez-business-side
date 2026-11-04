@@ -13,6 +13,7 @@ interface Service {
   child_max_quantity: number;
   custom_name: string | null;
   custom_description: string | null;
+  category: string | null;
   is_visible: boolean;
   display_order: number;
 }
@@ -64,6 +65,7 @@ export default function PanelServicesPage() {
           child_max_quantity: Number(service.child_max_quantity),
           custom_name: service.custom_name,
           custom_description: service.custom_description,
+          category: service.category,
           is_visible: service.is_visible,
         }),
       });
@@ -101,15 +103,18 @@ export default function PanelServicesPage() {
           const markup = cost > 0 ? Math.round((price / cost - 1) * 100) : 0;
           return <article key={service.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-              <div><h2 className="font-semibold text-slate-950">{service.custom_name || 'Unnamed service'}</h2><p className="mt-1 text-xs text-slate-500">Main service ID: {service.janjez_service_id}</p></div>
+              <div><div><h2 className="font-semibold text-slate-950">{service.custom_name || 'Unnamed service'}</h2><p className="mt-1 text-xs text-slate-600">Category: {service.category || 'Other'}</p></div><p className="mt-1 text-xs text-slate-500">Main service ID: {service.janjez_service_id}</p></div>
               <label className="flex items-center gap-2 text-sm font-medium text-slate-700"><input type="checkbox" checked={service.is_visible} onChange={(event) => changeService(service.id, { is_visible: event.target.checked })} className="h-4 w-4 rounded border-slate-300" /> Published</label>
             </div>
             <div className="grid gap-4 md:grid-cols-4">
+              <label className="text-sm font-medium text-slate-700">Display name<input value={service.custom_name || ''} onChange={(event) => changeService(service.id, { custom_name: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-950" /></label>
+              <label className="text-sm font-medium text-slate-700">Category<input value={service.category || ''} onChange={(event) => changeService(service.id, { category: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-950" /></label>
               <label className="text-sm font-medium text-slate-700">Provider cost / 1,000 (KES)<input value={cost} readOnly className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700" /></label>
               <label className="text-sm font-medium text-slate-700">Child price / 1,000 (KES)<input type="number" min={cost} step="0.01" value={service.child_price} onChange={(event) => changeService(service.id, { child_price: Number(event.target.value) })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-950" /></label>
               <label className="text-sm font-medium text-slate-700">Minimum quantity<input type="number" min={1} step={1} value={service.child_min_quantity} onChange={(event) => changeService(service.id, { child_min_quantity: Number(event.target.value) })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-950" /></label>
               <label className="text-sm font-medium text-slate-700">Maximum quantity<input type="number" min={1} step={1} value={service.child_max_quantity} onChange={(event) => changeService(service.id, { child_max_quantity: Number(event.target.value) })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-950" /></label>
             </div>
+            <label className="mt-4 block text-sm font-medium text-slate-700">Description<textarea value={service.custom_description || ''} onChange={(event) => changeService(service.id, { custom_description: event.target.value })} rows={2} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-950" /></label>
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-slate-600">Markup: <strong className="text-slate-950">{markup}%</strong> · Child price is charged proportionally to the ordered quantity.</p>
               <button type="button" disabled={saving === service.id} onClick={() => save(service)} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-60">{saving === service.id ? 'Saving…' : 'Save service'}</button>
