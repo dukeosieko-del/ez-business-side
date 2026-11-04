@@ -513,3 +513,62 @@ On **main**: `docs/BUSINESS-SIDE-WORKTREE.md` and `docs/RECON-BUSINESS-SIDE-2026
 - Post-promotion smoke checks: `/`, `/auth/sign-in`, `/dashboard/reseller`, `/dashboard/affiliate`, `/dashboard/wallet`, `/dashboard/withdrawals`, `/admin/withdrawals`, and `/api/health` returned HTTP 200. Database healthy; latest measured DB latency 370 ms. No runtime error clusters in the selected one-hour window and no error/fatal logs in the selected 30-minute window.
 - Remaining blockers: private Kilo session review itself remains unavailable; authenticated browser workflows still need a signed-in test account; Brevo production credentials/sender are not configured; npm audit still reports 40 vulnerabilities; wallet top-ups and automated M-Pesa payouts remain disabled pending verified provider settlement and reconciliation.
 - No Supabase migrations/RLS changes, wallet movements, payouts, customer changes, or bulk emails were performed. Frozen main Janjez app/database remain untouched.
+
+
+---
+
+## 15. Child Panel Platform Rebuild — 2026-11-04
+
+**Build branch:** `feat/child-panel-platform-e2e-20261104`  
+**Base:** Business Side production repair commit `e37c176e626fb9d5d96395149453691e5cf772c1`  
+**Frozen Main:** unchanged; no Main repository or database writes were made.
+
+### Delivered in this pass
+
+- Replaced browser-side privileged Supabase usage in the child-panel list and order views with server API routes.
+- Added idempotent demo-panel provisioning and visible synthetic service catalogue rows with valid service UUIDs.
+- Added demo-aware tenant resolution, customer signup/signin pages, service catalogue, order history, and order detail routes.
+- Added demo order persistence with a dedicated `demo_completed` status and `demo` / `demo_api` payment methods. Demo orders never debit a wallet or call a provider.
+- Added child API-key management, SHA-256 secret hashing, one-time secret display, revocation, scopes, expiry, and database-backed per-minute rate limiting.
+- Added API endpoints `GET /api/v1/child/services` and `POST /api/v1/child/orders`, plus cURL, TypeScript, Python, PHP, and Go examples in `docs/15-CHILD-PANEL-API.md`.
+- Fixed panel branding/copy/domain ownership checks to resolve the opaque session correctly.
+- Fixed partner panel order listing to verify panel ownership and paginate; removed service-role database access from the client page.
+- Added Brevo integration health checks and an admin page that reports API/sender readiness without exposing secrets or sending email.
+- Updated modal/form contrast for activation and color picker components.
+- Hardened affiliate click tracking with an opaque HTTP-only attribution cookie, server-derived IP/user-agent, no visitor IP display, a unique click token, unique commission-per-order constraint, and a verified-paid-order commission helper.
+- Disabled client-submitted affiliate conversion endpoint (410).
+- Locked demo panel publishing and paused M-Pesa activation/status, wallet top-up, and automated withdrawal approval until callback verification and ledger reconciliation are completed.
+
+### Business Side Supabase migrations applied
+
+- `child_panel_api_keys` — child-user API keys and rate-limit counters; RLS enabled, public access denied.
+- `affiliate_attribution_hardening` — click token/affiliate mapping, unique commission order, and service-only access.
+- `idempotent_activation_settlement` — transaction-locked activation settlement function; callable only by service role.
+- `child_order_demo_mode` — allow explicitly marked demo order status/payment method.
+
+No customer records, partner balances, wallet transactions, real payment requests, or payout records were created or modified during testing.
+
+### Preview build verification
+
+- Preview deployment `dpl_CQLKtPSeH4u2y2BJAWQG9JrF8h5j` built successfully from commit `919e75af4220d41e33291617ff5999853fe7288f`.
+- Next.js 16.3.5 compiled successfully; TypeScript passed; 53 static pages generated.
+- This build predates the final dashboard ownership fixes, environment template update, and route-map docs. A newer preview is required before accepting the final branch state.
+
+### Not production-ready yet
+
+- Live child orders are fail-closed until provider fulfilment, payment settlement, and idempotency callbacks are implemented and tested.
+- Partner M-Pesa activation and deposits remain paused; B2C payouts and automatic withdrawal settlement are not enabled.
+- Brevo API integration exists, but the account currently has no active verified sender returned for the configured Janjez sender; API key/sender environment values are not configured in Business Side Vercel. SMTP relay authentication has not been tested.
+- Affiliate click attribution is implemented, but commission creation is not yet wired to a verified paid-order callback. Affiliate payouts are requests only.
+- Supabase security advisor still reports 10 public tables with RLS disabled, 7 RLS-enabled tables without policies, 8 functions with mutable search_path, and leaked-password protection disabled. These must be remediated before production sign-off.
+- npm audit reports 40 dependency vulnerabilities (3 low, 35 moderate, 1 high, 1 critical).
+- Authenticated end-to-end tests against a separate synthetic test database have not yet been run. No production database test records were inserted.
+
+### Next gates
+
+1. Build and smoke-test the latest branch in a fresh Vercel preview.
+2. Finish RLS and function search_path remediation on Business Side only.
+3. Configure a verified Brevo sender and SMTP credentials through encrypted Vercel environment variables; then run a single explicitly approved test message.
+4. Complete sandbox STK deposit and B2C payout callbacks with idempotent ledger reservation/refund and reconcile tests.
+5. Wire paid-order affiliate commission recording and test the complete attribution lifecycle.
+6. Run authenticated demo E2E tests with synthetic users; only then review production enablement.
