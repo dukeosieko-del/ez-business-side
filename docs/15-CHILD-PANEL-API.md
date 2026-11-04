@@ -33,7 +33,7 @@ Allowed scopes: `services:read`, `orders:create`. Rate limits are 1–600 reques
 
 ### GET /services
 
-Requires `services:read`. Returns published services for the key's panel only. Provider cost and internal provider identifiers are never exposed.
+Requires `services:read`. Returns published services for the key's panel only. Prices are KES per 1,000 units. Provider cost and internal provider identifiers are never exposed.
 
 ### POST /orders
 
@@ -58,7 +58,7 @@ curl --fail-with-body \
   https://business.janjez.social/api/v1/child/services
 ```
 
-Demo order:
+Demo order (the charge is calculated as child price per 1,000 × quantity ÷ 1,000):
 
 ```bash
 curl --fail-with-body -X POST \
