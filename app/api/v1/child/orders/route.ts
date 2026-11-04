@@ -48,7 +48,9 @@ export async function POST(request: NextRequest) {
     .eq('is_visible', true)
     .maybeSingle();
   if (!service) return NextResponse.json({ error: 'Service not found or unpublished' }, { status: 404 });
-  if (parsed.data.quantity < service.child_min_quantity || parsed.data.quantity > service.child_max_quantity) {
+  const minQuantity = Number(service.child_min_quantity ?? 1);
+  const maxQuantity = Number(service.child_max_quantity ?? 100000);
+  if (parsed.data.quantity < minQuantity || parsed.data.quantity > maxQuantity) {
     return NextResponse.json({ error: 'Quantity is outside the allowed range' }, { status: 400 });
   }
 
