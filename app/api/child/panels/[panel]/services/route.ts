@@ -36,8 +36,8 @@ export async function GET(
     description: service.custom_description || '',
     category: service.category || 'Other',
     child_price: Number(service.child_price),
-    child_min_quantity: service.child_min_quantity,
-    child_max_quantity: service.child_max_quantity,
+    child_min_quantity: service.child_min_quantity ?? 1,
+    child_max_quantity: service.child_max_quantity ?? 100000,
   }));
 
   return NextResponse.json({
