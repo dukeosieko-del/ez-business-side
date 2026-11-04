@@ -26,7 +26,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     .select('id, janjez_service_id, cost, child_price, child_min_quantity, child_max_quantity, custom_name, custom_description, category, is_visible, display_order')
     .eq('panel_id', id).order('display_order', { ascending: true });
   if (error) return NextResponse.json({ error: 'Could not load services' }, { status: 500 });
-  return NextResponse.json({ success: true, data: data ?? [] }, { headers: { 'Cache-Control': 'no-store' } });
+  return NextResponse.json({ success: true, data: (data ?? []).map((service) => ({ ...service, cost: Number(service.cost ?? 0), child_price: Number(service.child_price), child_min_quantity: service.child_min_quantity ?? 1, child_max_quantity: service.child_max_quantity ?? 100000 })) }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
