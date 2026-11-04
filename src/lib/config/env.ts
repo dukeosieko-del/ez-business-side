@@ -9,8 +9,6 @@ const envSchema = z.object({
 
   JANJEZ_MAIN_API_URL: z.string().url(),
   JANJEZ_MAIN_API_KEY: z.string().min(1),
-  // The standalone Business Side must boot without credentials for the
-  // optional, frozen-main API adapter. The adapter validates this on use.
   JANJEZ_MAIN_API_SECRET: z.string().min(1).optional(),
 
   MPESA_ENV: z.enum(['sandbox', 'production']),
@@ -18,7 +16,7 @@ const envSchema = z.object({
   MPESA_CONSUMER_SECRET: z.string().optional(),
   MPESA_PASSKEY: z.string().optional(),
   MPESA_SHORTCODE: z.string().optional(),
-  MPESA_CALLBACK_URL: z.string().optional(),
+  MPESA_CALLBACK_URL: z.string().url().optional(),
   MPESA_CALLBACK_TOKEN: z.string().min(32).optional(),
   MPESA_LIVE_PAYMENTS_ENABLED: z.enum(['true', 'false']).default('false'),
   MPESA_B2C_INITIATOR_NAME: z.string().optional(),
@@ -44,15 +42,9 @@ const envSchema = z.object({
 
   SESSION_COOKIE_NAME: z.string().default('jez_bs_session'),
   IDEMPOTENCY_TTL_SECONDS: z.string().default('86400'),
-
   NEXT_PUBLIC_PARTNER_HUB_DOMAIN: z.string().default('partners.janjez.social'),
-
   HMAC_SECRET: z.string().min(32),
 });
 
 const isProductionBuild = process.env.NEXT_PHASE === 'phase-production-build';
-
-// Keep module imports build-safe; request-time code validates runtime values.
-export const env = (isProductionBuild
-  ? envSchema.partial().parse(process.env)
-  : envSchema.parse(process.env)) as z.infer<typeof envSchema>;
+export const env = (isProductionBuild ? envSchema.partial().parse(process.env) : envSchema.parse(process.env)) as z.infer<typeof envSchema>;
