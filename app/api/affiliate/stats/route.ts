@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   const [{ data: commissions, error: commissionsError }, { data: clicks, error: clicksError }, { count: totalClicks, error: countError }] = await Promise.all([
     supabase.from('affiliate_commissions').select('id, order_id, amount, status, created_at')
       .eq('affiliate_id', affiliate.id).order('created_at', { ascending: false }),
-    supabase.from('affiliate_clicks').select('id, ref_code, ip, user_agent, clicked_at, converted_order_id')
+    supabase.from('affiliate_clicks').select('id, ref_code, clicked_at, converted_order_id')
       .eq('ref_code', affiliate.affiliate_code).order('clicked_at', { ascending: false }).limit(20),
     supabase.from('affiliate_clicks').select('id', { count: 'exact', head: true }).eq('ref_code', affiliate.affiliate_code),
   ]);
