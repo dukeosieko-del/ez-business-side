@@ -603,3 +603,19 @@ Performance advisor currently reports unused indexes only (61 informational find
 ### Production decision
 
 **Do not promote this branch to production yet.** The child-panel demo and API foundation is ready for controlled preview validation, but live payments, provider fulfilment, transactional email delivery, affiliate commission settlement, and authenticated E2E testing remain release gates.
+
+
+## 17. Service catalogue and per-1,000 pricing — 2026-11-04
+
+- Replaced the placeholder service import with a read-only `GET /services` call to Janjez Main through the existing HMAC-signed Business Side adapter. The resulting catalogue is copied/upserted into Business Side only; Main is not modified.
+- Imported service names, descriptions, categories, min/max quantities, and provider cost into the child catalogue. Existing child names, descriptions, visibility, ordering, and price overrides are preserved on re-import.
+- Added the Business Side `child_services.category` field and panel/category index.
+- Built partner service management at `/dashboard/panels/[id]/services`: list, category, display name/description, provider cost, child price, min/max quantity, visibility, and save.
+- Added owner-scoped `GET/PATCH /api/partner/panels/[id]/services`; the API does not allow changing provider cost or Main service identifiers.
+- Standardized service rates as KES per 1,000 units. Order charges are calculated as `child_price_per_1000 × quantity ÷ 1,000`, rounded to two decimal places.
+- Default import markup is 50%; partner price overrides are constrained between provider cost and 2× provider cost (maximum 100% markup).
+- Updated public catalogue and child API responses to include category and clearly label rates per 1,000 units.
+
+### Import dependency
+
+The service import code is ready but cannot be validated in preview until the Business Side preview environment has a dedicated read-only `JANJEZ_MAIN_API_KEY` and `JANJEZ_MAIN_API_SECRET`. No production secret was copied into preview or source code. The import button fails explicitly if this integration is absent.
