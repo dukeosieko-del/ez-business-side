@@ -485,3 +485,16 @@ On **main**: `docs/BUSINESS-SIDE-WORKTREE.md` and `docs/RECON-BUSINESS-SIDE-2026
 - Not integrated from `kilo/emerald-dolphin-b37`: `package.json` and `package-lock.json` contain literal merge-conflict markers. That branch remains unsafe to build or merge.
 - Main's latest `BUILD-RECORD` commit `9f47d9b79b1931daaaa99a8e0698afdcd0471152` is an older deployment-history documentation update; the repair branch already has the newer audit and deployment records, so its stale historical details were not copied.
 - Production currently points at repair branch commit `e8225a9a0d562250541e8832194dc1b4c281f1fe` via deployment `dpl_Bkhdxp32pXSFw9g8sHtkGKvXf3VC`. This reconciliation is preview-only; production was not changed by this task.
+
+
+## 26. Production promotion — 2026-11-04
+
+- Promoted reconciliation commit `1f0e209e36d6b04372c1302fda6fefb2158152a9` to a Vercel production-target deployment.
+- Production deployment: `dpl_77shdCLCzspn7heqKeWpYYAtY3aE` — **READY**.
+- Production aliases confirmed: `business.janjez.social`, `ez-business-side.vercel.app`.
+- Production smoke checks after promotion: `/`, `/auth/sign-in`, `/dashboard/wallet`, `/dashboard/withdrawals`, `/admin/withdrawals`, and `/api/health` all returned HTTP 200.
+- Production database health: healthy; latest measured DB latency 358 ms.
+- Vercel runtime-error aggregation: no clusters in the selected one-hour window.
+- The deployment includes the reconciled sequential reseller dashboard loading from `kilo/handy-wood-rgb`; Kilo's unresolved `jez-verify` submodule and conflicted Emerald Dolphin package branch were not merged.
+- Remaining limitations: authenticated browser journey tests are not yet completed; Brevo credentials/sender are missing; npm audit still reports 40 vulnerabilities; wallet top-ups and automated withdrawal/M-Pesa payout remain disabled until provider settlement/reconciliation is verified.
+- No Supabase migrations or RLS changes were made. No wallet movements, payout requests, customer data changes, or bulk emails were executed.
