@@ -572,3 +572,34 @@ No customer records, partner balances, wallet transactions, real payment request
 4. Complete sandbox STK deposit and B2C payout callbacks with idempotent ledger reservation/refund and reconcile tests.
 5. Wire paid-order affiliate commission recording and test the complete attribution lifecycle.
 6. Run authenticated demo E2E tests with synthetic users; only then review production enablement.
+
+
+## 16. Security and integration audit update — 2026-11-04
+
+### RLS hardening applied to Business Side only
+
+The database advisor originally reported sensitive tables with RLS disabled and permissive `USING (true)` policies. Applied migration `20261104100905_business_side_rls_service_only` to enable RLS, remove existing public policies, deny browser-role access, and grant server service-role access for the sensitive Business Side tables (wallets, transactions, child orders, sessions, partner records, payment intents, affiliate records, audit records, webhook records, API keys, provider configuration, and related tables). Eight functions now have a pinned `search_path`. Added indexes for the previously unindexed foreign keys.
+
+Post-remediation Supabase security advisor result: **no RLS or mutable-search-path findings remain**. The remaining security warning is Supabase Auth leaked-password protection disabled; this must be enabled in the Supabase Auth dashboard.
+
+Performance advisor currently reports unused indexes only (61 informational findings); no unindexed-FK warning remains.
+
+### Latest code preview
+
+- Deployment `dpl_GDtZLe4emBDbdc3UVPpR4vTjan47` is READY from commit `15f8039cd88faa189c0bf3d238c5b2edc5faeafe`.
+- Next.js compile succeeded, TypeScript passed, and all 53 static pages generated.
+- Vercel's route manifest confirms the child-panel auth, service, order, API-key, affiliate, Brevo-health, and partner-panel API routes were included.
+- This deployment predates the docs-only RLS migration record commit `dd6a63fc7b4f69578c32b2370b2056fafbd65fcb`; deploy that final branch head to create the definitive preview.
+- Direct HTTP smoke testing from this environment was blocked by Vercel preview access protection/DNS reachability. Build logs and route manifest were verified, but browser-level route and authenticated E2E tests remain outstanding.
+
+### Payment and email readiness reaffirmed
+
+- M-Pesa activation initiation, activation status polling, and callback settlement are deliberately paused. No STK prompt, wallet credit/debit, deposit, or B2C payout was executed.
+- The idempotent activation settlement SQL function is installed but is not called while the callback endpoint is disabled.
+- Partner wallet top-up and withdrawal approval remain fail-closed. B2C payout workflow, callback reconciliation, and refund/reservation logic are not yet complete.
+- Brevo health page is read-only. No active verified Janjez sender was returned in the connected Brevo account check; Business Side Vercel still needs its own API key and sender environment configuration. SMTP authentication has not been tested. No message was sent.
+- Affiliate click tracking is active as a code path, but paid-order commission helper is not yet connected to a verified payment callback; no affiliate payout was sent.
+
+### Production decision
+
+**Do not promote this branch to production yet.** The child-panel demo and API foundation is ready for controlled preview validation, but live payments, provider fulfilment, transactional email delivery, affiliate commission settlement, and authenticated E2E testing remain release gates.
