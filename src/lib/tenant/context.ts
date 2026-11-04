@@ -42,11 +42,11 @@ export const DEFAULT_BRANDING: PanelBranding = {
 
 export const DEFAULT_COPY: PanelCopy = {
   heroTitle: 'Social Media Growth — Instant & Reliable',
-  heroSubtitle: 'Grow your social media presence. Pay with M-Pesa. Delivered in minutes.',
+  heroSubtitle: 'Browse services, manage orders, and pay securely.',
   ctaText: 'Browse Services',
   footerText: 'Powered by Janjez',
   metaTitle: 'SMM Panel',
-  metaDescription: 'Social media marketing services. Instant delivery. M-Pesa accepted.',
+  metaDescription: 'Social media marketing services.',
 };
 
 export async function getPanelContext(panelIdOrSubdomain: {
@@ -54,17 +54,16 @@ export async function getPanelContext(panelIdOrSubdomain: {
   subdomain?: string;
 }): Promise<PanelContext | null> {
   const supabase = getSupabaseAdmin();
-
-  const query = supabase
+  let query = supabase
     .from('child_panels')
     .select('*, partners!inner(id)')
-    .eq('status', 'active');
+    .in('status', ['active', 'demo']);
 
-  const { data } = panelIdOrSubdomain.panelId
+  const { data, error } = panelIdOrSubdomain.panelId
     ? await query.eq('id', panelIdOrSubdomain.panelId).maybeSingle()
     : await query.eq('subdomain', panelIdOrSubdomain.subdomain).maybeSingle();
 
-  if (!data) return null;
+  if (error || !data) return null;
 
   const branding = {
     ...DEFAULT_BRANDING,
@@ -85,14 +84,12 @@ export async function getPanelContext(panelIdOrSubdomain: {
     customDomain: data.custom_domain,
     branding,
     copy,
-    status: data.status as 'demo' | 'active' | 'suspended',
-    paymentGateways: data.payment_gateways ?? ['mpesa'],
+    status: data.status as 'demo' | 'active',
+    paymentGateways: data.status === 'demo' ? [] : (data.payment_gateways ?? ['mpesa']),
   };
 }
 
-export async function getPanelContextByDomain(
-  host: string
-): Promise<PanelContext | null> {
+export async function getPanelContextByDomain(host: string): Promise<PanelContext | null> {
   if (host.endsWith('.partners.janjez.social')) {
     const subdomain = host.replace('.partners.janjez.social', '');
     return getPanelContext({ subdomain });

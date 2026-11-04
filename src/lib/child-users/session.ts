@@ -3,7 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { randomBytes, createHash } from 'crypto';
 
 const SESSION_COOKIE = 'jez_child_session';
-const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 export interface ChildSessionPayload {
   panel_id: string;
@@ -16,12 +16,13 @@ export async function createChildSession(payload: ChildSessionPayload) {
   const token = randomBytes(32).toString('hex');
   const tokenHash = createHash('sha256').update(token).digest('hex');
   const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000);
-
   const supabase = getSupabaseAdmin();
-  await supabase.from('child_users').update({
+  const { data, error } = await supabase.from('child_users').update({
     session_token_hash: tokenHash,
     session_expires_at: expiresAt.toISOString(),
-  }).eq('id', payload.user_id);
+  }).eq('id', payload.user_id).eq('panel_id', payload.panel_id).select('id').maybeSingle();
+
+  if (error || !data) throw new Error('Could not persist child session');
 
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
@@ -31,8 +32,7 @@ export async function createChildSession(payload: ChildSessionPayload) {
     path: '/',
     expires: expiresAt,
   });
-
-  return { token, expiresAt };
+  return { expiresAt };
 }
 
 export async function getChildSession(): Promise<ChildSessionPayload | null> {
@@ -41,17 +41,14 @@ export async function getChildSession(): Promise<ChildSessionPayload | null> {
   if (!token) return null;
 
   const tokenHash = createHash('sha256').update(token).digest('hex');
-
   const supabase = getSupabaseAdmin();
-  const { data: user } = await supabase
-    .from('child_users')
-    .select('id, panel_id, email, session_expires_at')
+  const { data: user, error } = await supabase.from('child_users')
+    .select('id, panel_id, email, session_expires_at, status')
     .eq('session_token_hash', tokenHash)
     .gt('session_expires_at', new Date().toISOString())
     .maybeSingle();
 
-  if (!user) return null;
-
+  if (error || !user || user.status !== 'active') return null;
   return {
     panel_id: user.panel_id,
     user_id: user.id,

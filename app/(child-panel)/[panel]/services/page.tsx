@@ -1,52 +1,62 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
+import Link from 'next/link';
 
 interface Service {
   id: string;
   name: string;
   description: string;
+  category: string;
   child_price: number;
-  cost: number;
+  child_min_quantity: number;
+  child_max_quantity: number;
 }
 
-export function ServiceCatalogue() {
-  const { panel } = useParams();
+export default function ServiceCatalogue() {
+  const params = useParams<{ panel: string }>();
+  const panel = params.panel;
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const load = async () => {
-      const supabase = getSupabaseAdmin();
-      const { data } = await supabase
-        .from('child_services')
-        .select('*')
-        .eq('panel_id', panel);
-      setServices((data ?? []) as Service[]);
-      setLoading(false);
-    };
-    load();
+    let active = true;
+    async function load() {
+      try {
+        const response = await fetch(`/api/child/panels/${encodeURIComponent(panel)}/services`, { cache: 'no-store' });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? 'Could not load services');
+        if (active) setServices(result.data ?? []);
+      } catch (err) {
+        if (active) setError(err instanceof Error ? err.message : 'Could not load services');
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    void load();
+    return () => { active = false; };
   }, [panel]);
 
-  if (loading) return <div>Loading...</div>;
-
   return (
-    <div>
-      <h1>Services</h1>
-      <div style={{ display: 'grid', gap: '16px' }}>
-        {services.map(service => (
-          <div key={service.id} style={{ border: '1px solid #ddd', padding: '16px', borderRadius: '8px' }}>
-            <h3>{service.name}</h3>
-            <p>{service.description}</p>
-            <p>Price: KES {service.child_price} | Cost: KES {service.cost}</p>
-            <a href={`/order/${service.id}`}>Order</a>
-          </div>
+    <main className="mx-auto min-h-screen max-w-5xl px-6 py-12">
+      <Link href={`/${panel}`} className="text-sm text-blue-700 underline">Back to panel</Link>
+      <h1 className="mb-6 mt-3 text-3xl font-bold text-slate-950">Services</h1>
+      {loading && <p className="text-slate-600">Loading available services…</p>}
+      {error && <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-red-800">{error}</p>}
+      {!loading && !error && services.length === 0 && <p className="text-slate-600">No services are published yet.</p>}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {services.map((service) => (
+          <article key={service.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-2"><h2 className="font-semibold text-slate-950">{service.name}</h2><span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700">{service.category}</span></div>
+            <p className="mt-2 text-sm text-slate-600">{service.description}</p>
+            <p className="mt-4 font-semibold text-slate-950">KES {Number(service.child_price).toLocaleString('en-KE')} / 1,000 units</p>
+            <p className="mt-1 text-xs text-slate-500">Quantity: {service.child_min_quantity}–{service.child_max_quantity}</p>
+            <Link href={`/${panel}/order/${service.id}`} className="mt-4 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Order service</Link>
+          </article>
         ))}
       </div>
-    </div>
+    </main>
   );
 }
-
-export default ServiceCatalogue;

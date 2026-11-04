@@ -1,7 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
+}
+
+html {
+  color-scheme: light;
 }
 
 body {
@@ -10,4 +14,43 @@ body {
     Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+dialog,
+[role="dialog"] {
+  color-scheme: light;
+  color: #0f172a;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+dialog::backdrop {
+  background: rgb(15 23 42 / 58%);
+}
+
+dialog input,
+dialog select,
+dialog textarea,
+[role="dialog"] input,
+[role="dialog"] select,
+[role="dialog"] textarea {
+  color-scheme: light;
+  color: #0f172a;
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+}
+
+dialog input::placeholder,
+dialog textarea::placeholder,
+[role="dialog"] input::placeholder,
+[role="dialog"] textarea::placeholder {
+  color: #64748b;
+}
+
+dialog :focus-visible,
+[role="dialog"] :focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
