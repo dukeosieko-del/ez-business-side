@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
       description: service.custom_description || '',
       category: service.category || 'Other',
       price: Number(service.child_price),
-      min_quantity: service.child_min_quantity,
-      max_quantity: service.child_max_quantity,
+      min_quantity: service.child_min_quantity ?? 1,
+      max_quantity: service.child_max_quantity ?? 100000,
     })),
   }, { headers: { 'Cache-Control': 'no-store' } });
 }
