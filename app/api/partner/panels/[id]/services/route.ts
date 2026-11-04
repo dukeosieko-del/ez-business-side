@@ -49,8 +49,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { data: current } = await supabase.from('child_services').select('id, cost')
     .eq('id', values.service_id).eq('panel_id', panelId).maybeSingle();
   if (!current) return NextResponse.json({ error: 'Service not found' }, { status: 404 });
-  if (values.child_price !== undefined && values.child_price < Number(current.cost ?? 0)) {
-    return NextResponse.json({ error: 'Child price cannot be below provider cost' }, { status: 400 });
+  if (values.child_price !== undefined) {
+    const cost = Number(current.cost ?? 0);
+    if (values.child_price < cost) return NextResponse.json({ error: 'Child price cannot be below provider cost' }, { status: 400 });
+    if (cost > 0 && values.child_price > cost * 2) return NextResponse.json({ error: 'Markup cannot exceed 100% of provider cost' }, { status: 400 });
   }
 
   const patch: Record<string, unknown> = {};
