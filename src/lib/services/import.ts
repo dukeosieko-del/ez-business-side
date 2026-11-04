@@ -22,6 +22,7 @@ export interface ImportedService {
   child_max_quantity: number;
   custom_name: string | null;
   custom_description: string | null;
+  category: string | null;
   is_visible: boolean;
   is_drip_feed_enabled: boolean;
   display_order: number;
@@ -45,7 +46,7 @@ export async function importServices(panelId: string, serviceIds?: string[]): Pr
   }
 
   const { data: existing, error: existingError } = await supabase.from('child_services')
-    .select('id, janjez_service_id, cost, child_price, child_min_quantity, child_max_quantity, custom_name, custom_description, is_visible, is_drip_feed_enabled, display_order')
+    .select('id, janjez_service_id, cost, child_price, child_min_quantity, child_max_quantity, custom_name, custom_description, category, is_visible, is_drip_feed_enabled, display_order')
     .eq('panel_id', panelId);
   if (existingError) throw new Error('Could not load existing panel services');
 
@@ -65,8 +66,9 @@ export async function importServices(panelId: string, serviceIds?: string[]): Pr
       child_price: old ? Math.min(Math.max(Number(old.child_price), basePrice), basePrice * 2) : applyMarkup(basePrice, 50),
       child_min_quantity: min,
       child_max_quantity: max,
-      custom_name: old?.custom_name ?? null,
+      custom_name: old?.custom_name ?? service.name,
       custom_description: old?.custom_description ?? service.description ?? null,
+      category: service.category ?? 'Other',
       is_visible: old?.is_visible ?? true,
       is_drip_feed_enabled: old?.is_drip_feed_enabled ?? false,
       display_order: old?.display_order ?? index + 1,
@@ -76,7 +78,7 @@ export async function importServices(panelId: string, serviceIds?: string[]): Pr
   if (!rows.length) return [];
   const { data, error } = await supabase.from('child_services')
     .upsert(rows, { onConflict: 'panel_id, janjez_service_id' })
-    .select('id, janjez_service_id, panel_id, cost, child_price, child_min_quantity, child_max_quantity, custom_name, custom_description, is_visible, is_drip_feed_enabled, display_order');
+    .select('id, janjez_service_id, panel_id, cost, child_price, child_min_quantity, child_max_quantity, custom_name, custom_description, category, is_visible, is_drip_feed_enabled, display_order');
   if (error) throw new Error(`Service import failed: ${error.message}`);
   return (data ?? []) as ImportedService[];
 }
