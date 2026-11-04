@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { PublishButton } from '@/components/dashboard/PublishButton';
 
 interface Panel {
   id: string;
@@ -95,7 +94,7 @@ export default function PanelsPage() {
                 <Link href={`/dashboard/panels/${panel.id}/copy`} className="text-blue-700 underline">Content</Link>
                 <Link href={`/dashboard/panels/${panel.id}/domain`} className="text-blue-700 underline">Custom domain</Link>
                 <Link href={`/dashboard/panels/${panel.id}/orders`} className="text-blue-700 underline">Orders</Link>
-                <PublishButton panelId={panel.id} />
+                <span className="text-xs font-medium text-slate-600">{panel.status === 'demo' ? 'Demo publishing locked until live fulfilment is configured' : 'Live panel'}</span>
               </nav>
             </article>
           ))}
