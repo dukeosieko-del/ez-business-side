@@ -8,6 +8,7 @@ interface Service {
   id: string;
   name: string;
   description: string;
+  category: string;
   child_price: number;
   child_min_quantity: number;
   child_max_quantity: number;
@@ -48,7 +49,7 @@ export default function ServiceCatalogue() {
       <div className="grid gap-4 sm:grid-cols-2">
         {services.map((service) => (
           <article key={service.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="font-semibold text-slate-950">{service.name}</h2>
+            <div className="flex items-center justify-between gap-2"><h2 className="font-semibold text-slate-950">{service.name}</h2><span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700">{service.category}</span></div>
             <p className="mt-2 text-sm text-slate-600">{service.description}</p>
             <p className="mt-4 font-semibold text-slate-950">KES {Number(service.child_price).toLocaleString('en-KE')} / 1,000 units</p>
             <p className="mt-1 text-xs text-slate-500">Quantity: {service.child_min_quantity}–{service.child_max_quantity}</p>
