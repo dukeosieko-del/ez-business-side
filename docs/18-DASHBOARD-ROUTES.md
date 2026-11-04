@@ -47,6 +47,8 @@ All routes in this document belong to the dedicated Business Side app. No route 
 - `GET /api/partner/panels`
 - `POST /api/partner/panels/demo`
 - `GET /api/partner/panels/[id]/orders` verifies both session and panel ownership
+- `GET/PATCH /api/partner/panels/[id]/services` manages tenant-owned service catalogue, categories, visibility, and per-1,000 pricing
+- `POST /api/partner/panels/[id]/services/import` copies the read-only Main catalogue into Business Side
 - `GET /api/admin/integrations/brevo/health` is admin-only and read-only
 - `GET /api/affiliate/track/click?ref=...` records a click and sets the attribution cookie
 
