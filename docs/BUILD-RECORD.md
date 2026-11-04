@@ -474,3 +474,14 @@ On **main**: `docs/BUSINESS-SIDE-WORKTREE.md` and `docs/RECON-BUSINESS-SIDE-2026
 - No production deployment or promotion was performed. Production `business.janjez.social/api/health` remains HTTP 200 and database healthy (383 ms at last check).
 - M-Pesa B2C approval/payout helpers now explicitly fail closed; no fake "processed" payout records are created.
 - Wallet top-ups remain disabled (503) until verified payment settlement exists.
+
+
+## 25. Kilo branch reconciliation — 2026-11-04
+
+- Reconciliation preview branch: `preview/reconcile-kilo-commits-20261104`, based on repair branch head `e8225a9a0d562250541e8832194dc1b4c281f1fe`.
+- Integrated from `kilo/handy-wood-rgb`: reseller dashboard now awaits partner, wallet, then panel loads sequentially. The `test:hero` extension fix (`.js`) was already present on the repair branch and retained.
+- Deliberately not copied from Kilo's intermediate `wip` lockfile commit: it strips `dev: true` metadata from optional platform-specific packages without a corresponding dependency-manifest change. The repair branch lockfile remains intact.
+- Not integrated from `kilo/bronze-lynx-9t1`: the branch adds a gitlink at `jez-verify` pointing to commit `f105b4dc0a888fd86119f2e2b1e34bdb2b2aeeeb`, but there is no `.gitmodules` file and no accessible repository URL/target. The submodule cannot be safely resolved or built.
+- Not integrated from `kilo/emerald-dolphin-b37`: `package.json` and `package-lock.json` contain literal merge-conflict markers. That branch remains unsafe to build or merge.
+- Main's latest `BUILD-RECORD` commit `9f47d9b79b1931daaaa99a8e0698afdcd0471152` is an older deployment-history documentation update; the repair branch already has the newer audit and deployment records, so its stale historical details were not copied.
+- Production currently points at repair branch commit `e8225a9a0d562250541e8832194dc1b4c281f1fe` via deployment `dpl_Bkhdxp32pXSFw9g8sHtkGKvXf3VC`. This reconciliation is preview-only; production was not changed by this task.
