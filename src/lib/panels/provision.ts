@@ -71,7 +71,7 @@ export async function provisionDemoPanel(partnerId: string): Promise<DemoPanel> 
   const now = new Date().toISOString();
   const demoServices = DEMO_SERVICES.map((service, index) => ({
     panel_id: panel.id,
-    janjez_service_id: '',
+    janjez_service_id: randomUUID(),
     child_price: service.price,
     cost: 0,
     child_min_quantity: service.minQty,
