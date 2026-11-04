@@ -50,8 +50,10 @@ export async function POST(req: NextRequest) {
     .select('id, child_price, child_min_quantity, child_max_quantity')
     .eq('id', service_id).eq('panel_id', panel.id).eq('is_visible', true).maybeSingle();
   if (serviceError || !service) return NextResponse.json({ error: 'Service not found or unpublished' }, { status: 404 });
-  if (quantity < service.child_min_quantity || quantity > service.child_max_quantity) {
-    return NextResponse.json({ error: `Quantity must be between ${service.child_min_quantity} and ${service.child_max_quantity}` }, { status: 400 });
+  const minQuantity = Number(service.child_min_quantity ?? 1);
+  const maxQuantity = Number(service.child_max_quantity ?? 100000);
+  if (quantity < minQuantity || quantity > maxQuantity) {
+    return NextResponse.json({ error: `Quantity must be between ${minQuantity} and ${maxQuantity}` }, { status: 400 });
   }
 
   const totalCharge = Math.round(Number(service.child_price) * quantity / 1000 * 100) / 100;
