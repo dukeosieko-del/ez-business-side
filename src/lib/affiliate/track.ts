@@ -1,20 +1,26 @@
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 
-export async function trackClick(refCode: string, ip?: string, userAgent?: string) {
+export async function trackClick(refCode: string, ip?: string, userAgent?: string): Promise<string | null> {
   const supabase = getSupabaseAdmin();
-  const fingerprint = generateFingerprint(ip, userAgent);
+  const { data: affiliate, error: affiliateError } = await supabase.from('affiliates')
+    .select('id').eq('affiliate_code', refCode).maybeSingle();
+  if (affiliateError || !affiliate) return null;
 
-  await supabase.from('affiliate_clicks').insert({
+  const clickToken = randomUUID();
+  const { error } = await supabase.from('affiliate_clicks').insert({
+    affiliate_id: affiliate.id,
+    click_token: clickToken,
     ref_code: refCode,
-    fingerprint,
-    ip: ip ?? undefined,
-    user_agent: userAgent ?? undefined,
+    fingerprint: generateFingerprint(ip, userAgent),
+    ip: ip ?? null,
+    user_agent: userAgent ?? null,
     clicked_at: new Date().toISOString(),
   });
+  if (error) throw new Error('Could not record affiliate click');
+  return clickToken;
 }
 
 export function generateFingerprint(ip?: string, userAgent?: string): string {
-  const parts = [ip ?? 'unknown', userAgent ?? 'unknown'];
-  return createHash('sha256').update(parts.join('|')).digest('hex').slice(0, 32);
+  return createHash('sha256').update([ip ?? 'unknown', userAgent ?? 'unknown'].join('|')).digest('hex');
 }
