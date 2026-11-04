@@ -1,6 +1,7 @@
 import { env } from '@/lib/config/env';
 
-const callbackBase = env.MPESA_CALLBACK_URL ?? `${env.NEXT_PUBLIC_SITE_URL}/api/partner/activate/callback`;
+const siteUrl = env.NEXT_PUBLIC_SITE_URL ?? 'https://business.janjez.social';
+const callbackBase = env.MPESA_CALLBACK_URL ?? `${siteUrl}/api/partner/activate/callback`;
 const activationCallback = new URL(callbackBase);
 if (env.MPESA_CALLBACK_TOKEN) activationCallback.searchParams.set('token', env.MPESA_CALLBACK_TOKEN);
 
