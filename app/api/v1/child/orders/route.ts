@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Quantity is outside the allowed range' }, { status: 400 });
   }
 
-  const charge = Math.round(Number(service.child_price) * parsed.data.quantity * 100) / 100;
+  const charge = Math.round(Number(service.child_price) * parsed.data.quantity / 1000 * 100) / 100;
   const { data: order, error } = await supabase.from('child_orders').insert({
     panel_id: auth.principal.panelId,
     service_id: service.id,
