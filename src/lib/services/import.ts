@@ -56,6 +56,7 @@ export async function importServices(panelId: string, serviceIds?: string[]): Pr
       throw new Error('Main service ID is not a UUID');
     }
     const basePrice = Number(service.price);
+    if (!Number.isFinite(basePrice) || basePrice < 0) throw new Error(`Invalid provider price for service ${service.id}`);
     const old = existingByMainId.get(service.id);
     const min = Math.max(1, Math.floor(Number(service.min_quantity) || 1));
     const max = Math.max(min, Math.floor(Number(service.max_quantity) || 100000));
@@ -66,7 +67,7 @@ export async function importServices(panelId: string, serviceIds?: string[]): Pr
       child_price: old ? Math.min(Math.max(Number(old.child_price), basePrice), basePrice * 2) : applyMarkup(basePrice, 50),
       child_min_quantity: min,
       child_max_quantity: max,
-      custom_name: old?.custom_name ?? service.name,
+      custom_name: old?.custom_name || service.name,
       custom_description: old?.custom_description ?? service.description ?? null,
       category: service.category ?? 'Other',
       is_visible: old?.is_visible ?? true,
