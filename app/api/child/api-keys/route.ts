@@ -16,11 +16,9 @@ export async function GET() {
   const session = await getChildSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
-    .from('child_api_keys')
+  const { data, error } = await supabase.from('child_api_keys')
     .select('id, name, scopes, rate_limit, last_used_at, expires_at, revoked_at, created_at')
-    .eq('panel_id', session.panel_id)
-    .eq('child_user_id', session.user_id)
+    .eq('panel_id', session.panel_id).eq('child_user_id', session.user_id)
     .order('created_at', { ascending: false });
   if (error) return NextResponse.json({ error: 'Could not load API keys' }, { status: 500 });
   return NextResponse.json({ success: true, data: data ?? [] }, { headers: { 'Cache-Control': 'no-store' } });
@@ -29,7 +27,6 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const session = await getChildSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }); }
   const parsed = createSchema.safeParse(body);
@@ -41,25 +38,16 @@ export async function POST(request: NextRequest) {
 
   const keyId = randomBytes(8).toString('hex');
   const secret = randomBytes(32).toString('base64url');
-  const token = `jzb_${panel.status}_${keyId}.${secret}`;
-  const expiresAt = parsed.data.expires_in_days
-    ? new Date(Date.now() + parsed.data.expires_in_days * 86400000).toISOString()
-    : null;
+  const mode = panel.status === 'demo' ? 'demo' : 'live';
+  const token = `jzb_${mode}_${keyId}.${secret}`;
+  const expiresAt = parsed.data.expires_in_days ? new Date(Date.now() + parsed.data.expires_in_days * 86400000).toISOString() : null;
 
   const { data: key, error } = await supabase.from('child_api_keys').insert({
-    panel_id: session.panel_id,
-    child_user_id: session.user_id,
-    key_id: keyId,
-    key_hash: createHash('sha256').update(secret).digest('hex'),
-    name: parsed.data.name,
-    scopes: parsed.data.scopes,
-    rate_limit: parsed.data.rate_limit,
-    expires_at: expiresAt,
+    panel_id: session.panel_id, child_user_id: session.user_id, key_id: keyId,
+    key_hash: createHash('sha256').update(secret).digest('hex'), name: parsed.data.name,
+    scopes: parsed.data.scopes, rate_limit: parsed.data.rate_limit, expires_at: expiresAt,
   }).select('id, name, scopes, rate_limit, expires_at, created_at').single();
-
   if (error || !key) return NextResponse.json({ error: 'Could not create API key' }, { status: 500 });
-  return NextResponse.json({
-    success: true,
-    data: { ...key, token, warning: 'Copy this secret now. It will not be shown again.' },
-  }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
+  return NextResponse.json({ success: true, data: { ...key, token, warning: 'Copy this secret now. It will not be shown again.' } },
+    { status: 201, headers: { 'Cache-Control': 'no-store' } });
 }
