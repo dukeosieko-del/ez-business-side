@@ -10,6 +10,7 @@ const updateSchema = z.object({
   child_max_quantity: z.number().int().positive().max(10000000).optional(),
   custom_name: z.string().trim().max(100).nullable().optional(),
   custom_description: z.string().trim().max(300).nullable().optional(),
+  category: z.string().trim().max(80).nullable().optional(),
   is_visible: z.boolean().optional(),
 });
 
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!panel) return NextResponse.json({ error: 'Panel not found' }, { status: 404 });
 
   const { data, error } = await supabase.from('child_services')
-    .select('id, janjez_service_id, cost, child_price, child_min_quantity, child_max_quantity, custom_name, custom_description, is_visible, display_order')
+    .select('id, janjez_service_id, cost, child_price, child_min_quantity, child_max_quantity, custom_name, custom_description, category, is_visible, display_order')
     .eq('panel_id', id).order('display_order', { ascending: true });
   if (error) return NextResponse.json({ error: 'Could not load services' }, { status: 500 });
   return NextResponse.json({ success: true, data: data ?? [] }, { headers: { 'Cache-Control': 'no-store' } });
@@ -56,12 +57,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   const patch: Record<string, unknown> = {};
-  for (const field of ['child_price','child_min_quantity','child_max_quantity','custom_name','custom_description','is_visible'] as const) {
+  for (const field of ['child_price','child_min_quantity','child_max_quantity','custom_name','custom_description','category','is_visible'] as const) {
     if (values[field] !== undefined) patch[field] = values[field];
   }
   const { data, error } = await supabase.from('child_services').update(patch)
     .eq('id', values.service_id).eq('panel_id', panelId)
-    .select('id, child_price, child_min_quantity, child_max_quantity, custom_name, custom_description, is_visible').single();
+    .select('id, child_price, child_min_quantity, child_max_quantity, custom_name, custom_description, category, is_visible').single();
   if (error || !data) return NextResponse.json({ error: 'Could not update service' }, { status: 500 });
   return NextResponse.json({ success: true, data });
 }
