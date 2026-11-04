@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from('child_services')
-    .select('id, custom_name, custom_description, child_price, child_min_quantity, child_max_quantity')
+    .select('id, custom_name, custom_description, category, child_price, child_min_quantity, child_max_quantity')
     .eq('panel_id', auth.principal.panelId)
     .eq('is_visible', true)
     .order('display_order', { ascending: true });
@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
       id: service.id,
       name: service.custom_name || 'Service',
       description: service.custom_description || '',
+      category: service.category || 'Other',
       price: Number(service.child_price),
       min_quantity: service.child_min_quantity,
       max_quantity: service.child_max_quantity,
