@@ -50,7 +50,7 @@ export default function ServiceCatalogue() {
           <article key={service.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="font-semibold text-slate-950">{service.name}</h2>
             <p className="mt-2 text-sm text-slate-600">{service.description}</p>
-            <p className="mt-4 font-semibold text-slate-950">KES {Number(service.child_price).toLocaleString('en-KE')}</p>
+            <p className="mt-4 font-semibold text-slate-950">KES {Number(service.child_price).toLocaleString('en-KE')} / 1,000 units</p>
             <p className="mt-1 text-xs text-slate-500">Quantity: {service.child_min_quantity}–{service.child_max_quantity}</p>
             <Link href={`/${panel}/order/${service.id}`} className="mt-4 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Order service</Link>
           </article>
